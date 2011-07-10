@@ -21,6 +21,7 @@
 import os
 import sys
 from ConfigParser import SafeConfigParser
+from zencoding import zen_core as zen
 
 
 DEFAULT_ZENDIR = '@DEFAULT_ZENDIR@'
@@ -35,8 +36,6 @@ DEFAULT_PROFILE_DICT = {	'tag_case': 'lower',
 							'place_cursor': False,
 							'indent': True,
 							'self_closing_tag': 'xhtml' }
-
-from zencoding import zen_core as zen
 
 
 class ZenEngine(object):
