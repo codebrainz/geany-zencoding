@@ -119,8 +119,6 @@ class ZenEngine(object):
 
 	def wrap_with_abbreviation(self, abbr, text):
 
-		if abbr.endswith('>'):
-			abbr = abbr[:-1]
 		text = zencoding.wrap_with_abbreviation(abbr, text, self.doc_type, self.active_profile)
 		if not text:
 			return ""

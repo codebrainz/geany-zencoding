@@ -1,6 +1,33 @@
 Zen Coding plugin for Geany
 ===========================
 
+**From the [Zen Coding website](https://code.google.com/p/zen-coding):**
+
+[Zen Coding](https://code.google.com/p/zen-coding) is an editor plugin for
+high-speed HTML, XML, XSL (or any other structured code format) coding and
+editing. The core of this plugin is a powerful abbreviation engine which
+allows you to expand expressions—similar to CSS selectors—into HTML code.
+For example:
+
+	div#page>div.logo+ul#navigation>li*5>a
+
+...can be expanded into:
+
+```html
+<div id="page">
+        <div class="logo"></div>
+        <ul id="navigation">
+                <li><a href=""></a></li>
+                <li><a href=""></a></li>
+                <li><a href=""></a></li>
+                <li><a href=""></a></li>
+                <li><a href=""></a></li>
+        </ul>
+</div>
+```
+
+[Read more about current Zen Coding syntax](https://code.google.com/p/zen-coding/wiki/ZenHTMLSelectorsEn)
+
 Installation
 ------------
 
