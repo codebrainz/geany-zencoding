@@ -9,7 +9,6 @@ LT_INIT([disable-static])
 AM_SILENT_RULES([yes])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_SRCDIR([src/plugin.c])
-AC_CONFIG_HEADER([src/config.h])
 
 # Check for utilities
 AC_PROG_CC
