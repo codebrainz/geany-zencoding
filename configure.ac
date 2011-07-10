@@ -14,11 +14,11 @@ AC_CONFIG_SRCDIR([src/plugin.c])
 AC_PROG_CC
 AC_PROG_SED
 
-# Check for the py_compilefiles script to pre-compile python sources
-AC_PATH_PROG([PY_COMPILEFILES], [py_compilefiles], [no])
-AC_SUBST([PY_COMPILEFILES])
-if [[ x"$PY_COMPILEFILES" = "xno" ]]; then
-	AC_MSG_ERROR([py_compilefiles not found, is Python installed?])
+# Check for Python to pre-compile python sources
+AC_PATH_PROG([PYTHON], [python], [no])
+AC_SUBST([PYTHON])
+if [[ x"$PYTHON" = "xno" ]]; then
+	AC_MSG_ERROR([Python not found, is it installed?])
 fi
 
 # Check for headers, libraries and packages

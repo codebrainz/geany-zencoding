@@ -1,6 +1,5 @@
 SUBDIRS = actions filters interface parser
 
-zencoding_flags				=	-fq
 zencoding_sources			=	__init__.py \
 								engine.py \
 								html_matcher.py \
@@ -14,7 +13,7 @@ zencoding_DATA				=	$(zencoding_sources) \
 CLEANFILES					=	$(zencoding_objects) engine.py
 
 %.pyc: %.py
-	$(AM_V_GEN)$(PY_COMPILEFILES) $(zencoding_flags) $<
+	$(AM_V_GEN)$(PYTHON) -c "import py_compile; py_compile.compile('$<')"
 
 engine.py: engine.py.in
 	$(AM_V_GEN)$(SED) \

@@ -9,4 +9,4 @@ zencoding_DATA				=	$(zencoding_sources) \
 CLEANFILES					=	$(zencoding_objects)
 
 %.pyc: %.py
-	$(AM_V_GEN)$(PY_COMPILEFILES) -fq $<
+	$(AM_V_GEN)$(PYTHON) -c "import py_compile; py_compile.compile('$<')"
