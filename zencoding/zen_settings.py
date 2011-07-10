@@ -14,7 +14,11 @@ zen_settings = {
 		'profile': 'xhtml',
 		
 #		Inner element indentation
-		'indentation': '\t'
+		'indentation': '\t',
+		
+		# newline variables, useful for wrapping
+		'newline': '\n',
+		'nl': '\n'
 	},
 	
 	# common settings are used for quick injection of user-defined snippets
@@ -24,6 +28,7 @@ zen_settings = {
 	
 	'css': {
 		'extends': 'common',
+		'filters': 'html,css',
 		'snippets': {
 			"@i": "@import url(|);",
 			"@m": "@media print {\n\t|\n}",
@@ -40,6 +45,8 @@ zen_settings = {
 			"r:a": "right:auto;",
 			"b": "bottom:|;",
 			"b:a": "bottom:auto;",
+			"brad": "-webkit-border-radius: ${1:radius};\n-moz-border-radius: $1;\n-ms-border-radius: $1;\nborder-radius: $1;",
+			"bsha": "-webkit-box-shadow: ${1:hoff} ${2:voff} ${3:blur} ${4:rgba(0,0,0,0.5)};\n-moz-box-shadow: $1 $2 $3 $4;\n-ms-box-shadow: $1 $2 $3 $4;\nbox-shadow: $1 $2 $3 $4;",
 			"l": "left:|;",
 			"l:a": "left:auto;",
 			"z": "z-index:|;",
@@ -250,7 +257,7 @@ zen_settings = {
 			"bg": "background:|;",
 			"bg+": "background:#FFF url(|) 0 0 no-repeat;",
 			"bg:n": "background:none;",
-			"bg:ie": "filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(src='|x.png');",
+			"bg:ie": "filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(src='${1:x}.png',sizingMethod='${2:crop}');",
 			"bgc": "background-color:#FFF;",
 			"bgi": "background-image:url(|);",
 			"bgi:n": "background-image:none;",
@@ -501,6 +508,7 @@ zen_settings = {
 	
 	'html': {
 		'extends': 'common',
+		'filters': 'html',
 		'snippets': {
 			'cc:ie6': '<!--[if lte IE 6]>\n\t${child}|\n<![endif]-->',
 			'cc:ie': '<!--[if IE]>\n\t${child}|\n<![endif]-->',
@@ -508,8 +516,8 @@ zen_settings = {
 			'html:4t': '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">\n' +
 					'<html lang="${lang}">\n' +
 					'<head>\n' +
-					'	<title></title>\n' +
 					'	<meta http-equiv="Content-Type" content="text/html;charset=${charset}">\n' +
+					'	<title></title>\n' +
 					'</head>\n' +
 					'<body>\n\t${child}|\n</body>\n' +
 					'</html>',
@@ -517,8 +525,8 @@ zen_settings = {
 			'html:4s': '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">\n' +
 					'<html lang="${lang}">\n' +
 					'<head>\n' +
-					'	<title></title>\n' +
 					'	<meta http-equiv="Content-Type" content="text/html;charset=${charset}">\n' +
+					'	<title></title>\n' +
 					'</head>\n' +
 					'<body>\n\t${child}|\n</body>\n' +
 					'</html>',
@@ -526,8 +534,8 @@ zen_settings = {
 			'html:xt': '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">\n' +
 					'<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="${lang}">\n' +
 					'<head>\n' +
-					'	<title></title>\n' +
 					'	<meta http-equiv="Content-Type" content="text/html;charset=${charset}" />\n' +
+					'	<title></title>\n' +
 					'</head>\n' +
 					'<body>\n\t${child}|\n</body>\n' +
 					'</html>',
@@ -535,8 +543,8 @@ zen_settings = {
 			'html:xs': '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">\n' +
 					'<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="${lang}">\n' +
 					'<head>\n' +
-					'	<title></title>\n' +
 					'	<meta http-equiv="Content-Type" content="text/html;charset=${charset}" />\n' +
+					'	<title></title>\n' +
 					'</head>\n' +
 					'<body>\n\t${child}|\n</body>\n' +
 					'</html>',
@@ -544,8 +552,8 @@ zen_settings = {
 			'html:xxs': '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">\n' +
 					'<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="${lang}">\n' +
 					'<head>\n' +
-					'	<title></title>\n' +
 					'	<meta http-equiv="Content-Type" content="text/html;charset=${charset}" />\n' +
+					'	<title></title>\n' +
 					'</head>\n' +
 					'<body>\n\t${child}|\n</body>\n' +
 					'</html>',
@@ -553,8 +561,8 @@ zen_settings = {
 			'html:5': '<!DOCTYPE HTML>\n' +
 					'<html lang="${locale}">\n' +
 					'<head>\n' +
-					'	<title></title>\n' +
 					'	<meta charset="${charset}">\n' +
+					'	<title></title>\n' +
 					'</head>\n' +
 					'<body>\n\t${child}|\n</body>\n' +
 					'</html>'
@@ -570,7 +578,7 @@ zen_settings = {
 			'bdo': '<bdo dir=""></bdo>',
 			'bdo:r': '<bdo dir="rtl"></bdo>',
 			'bdo:l': '<bdo dir="ltr"></bdo>',
-			'link:css': '<link rel="stylesheet" type="text/css" href="|style.css" media="all" />',
+			'link:css': '<link rel="stylesheet" type="text/css" href="${1:style}.css" media="all" />',
 			'link:print': '<link rel="stylesheet" type="text/css" href="|print.css" media="print" />',
 			'link:favicon': '<link rel="shortcut icon" type="image/x-icon" href="|favicon.ico" />',
 			'link:touch': '<link rel="apple-touch-icon" href="|favicon.png" />',
@@ -693,8 +701,14 @@ zen_settings = {
 		}
 	},
 	
+	'xml': {
+		'extends': 'html',
+		'filters': 'html'
+	},
+	
 	'xsl': {
-		'extends': 'common,html', 
+		'extends': 'common,html',
+		'filters': 'html, xsl',
 		'abbreviations': {
 			'tm': '<xsl:template match="" mode=""></xsl:template>',
 			'tmatch': 'tm',
@@ -717,5 +731,10 @@ zen_settings = {
 #			expandos
 			'choose+': 'xsl:choose>xsl:when+xsl:otherwise'
 		}
+	},
+	
+	'haml': {
+		'filters': 'haml',
+		'extends': 'html'
 	}
 }

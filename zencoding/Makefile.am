@@ -1,10 +1,11 @@
+SUBDIRS = actions filters interface parser
+
 zencoding_flags				=	-fq
 zencoding_sources			=	__init__.py \
 								engine.py \
 								html_matcher.py \
-								htmlparser.py \
-								stparser.py \
-								zen_core.py \
+								resources.py \
+								utils.py \
 								zen_settings.py
 zencoding_objects			=	$(zencoding_sources:.py=.pyc)
 zencodingdir				=	$(libdir)/geany/zencoding

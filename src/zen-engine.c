@@ -188,10 +188,8 @@ void zen_engine_set_doc_type(ZenEngine *zen, const char *doc_type)
 }
 
 
-char *zen_engine_expand_abbreviation(ZenEngine *zen, const char *line,
-										int index, char **abbr, int *abbr_pos)
+char *zen_engine_expand_abbreviation(ZenEngine *zen, const char *line, char **abbr)
 {
-	int tmp_abbr_pos;
 	char *tmp_abbr = NULL, *tmp_text = NULL;
 	PyObject *func, *rargs, *pargs, *dt;
 
@@ -207,7 +205,7 @@ char *zen_engine_expand_abbreviation(ZenEngine *zen, const char *line,
 		return NULL;
 	}
 
-	pargs = Py_BuildValue("(si)", line, index);
+	pargs = Py_BuildValue("(s)", line);
 
 	if (pargs == NULL)
 	{
@@ -228,7 +226,7 @@ char *zen_engine_expand_abbreviation(ZenEngine *zen, const char *line,
 		return NULL;
 	}
 
-	if (!PyArg_Parse(rargs, "(sis)", &tmp_abbr, &tmp_abbr_pos, &tmp_text))
+	if (!PyArg_Parse(rargs, "(ss)", &tmp_abbr, &tmp_text))
 	{
 		if (PyErr_Occurred())
 			PyErr_Print();
@@ -247,9 +245,6 @@ char *zen_engine_expand_abbreviation(ZenEngine *zen, const char *line,
 
 	if (abbr != NULL)
 		*abbr = strdup(tmp_abbr);
-
-	if (abbr_pos != NULL)
-		*abbr_pos = tmp_abbr_pos;
 
 	return strdup(tmp_text);
 }

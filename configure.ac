@@ -28,4 +28,11 @@ PKG_CHECK_MODULES([geany], [geany])
 AX_PYTHON_DEVEL([>= '2.6'])
 
 # Generate build files
-AC_OUTPUT([Makefile src/Makefile zencoding/Makefile data/Makefile])
+AC_OUTPUT([Makefile
+	src/Makefile
+	zencoding/Makefile
+	zencoding/actions/Makefile
+	zencoding/filters/Makefile
+	zencoding/interface/Makefile
+	zencoding/parser/Makefile
+	data/Makefile])

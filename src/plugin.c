@@ -88,15 +88,20 @@ static void on_expand_abbreviation(GtkMenuItem *menuitem, struct ZenCodingPlugin
 		return;
 	}
 
-	text = zen_engine_expand_abbreviation(plugin->zen, line, rel_pos, &ret_abbr, &ret_abbr_pos);
+	text = zen_engine_expand_abbreviation(plugin->zen, line, &ret_abbr);
 	if (text != NULL)
 	{
-		insert_start = line_pos + ret_abbr_pos;
-		insert_end = insert_start + strlen(ret_abbr);
+		char *tmp = strstr(line, ret_abbr);
+		if (tmp != NULL)
+		{
+			ret_abbr_pos = tmp - line;
+			insert_start = line_pos + ret_abbr_pos;
+			insert_end = insert_start + strlen(ret_abbr);
 
-		sci_set_selection_start(doc->editor->sci, insert_start);
-		sci_set_selection_end(doc->editor->sci, insert_end);
-		sci_replace_sel(doc->editor->sci, text);
+			sci_set_selection_start(doc->editor->sci, insert_start);
+			sci_set_selection_end(doc->editor->sci, insert_end);
+			sci_replace_sel(doc->editor->sci, text);
+		}
 
 		g_free(ret_abbr);
 		g_free(text);
@@ -455,19 +460,49 @@ static void on_monitor_changed(GFileMonitor *monitor, GFile *file,
 }
 
 
+static void recursively_copy(const char *src, const char *dst)
+{
+	GDir *dir;
+	char *src_fn, *dst_fn, *code;
+	const char *ent;
+
+	dir = g_dir_open(src, 0, NULL);
+
+	while ((ent = g_dir_read_name(dir)) != NULL)
+	{
+		if (g_str_equal(ent, ".") || g_str_equal(ent, ".."))
+			continue;
+
+		src_fn = g_build_filename(src, ent, NULL);
+		dst_fn = g_build_filename(dst, ent, NULL);
+
+		if (g_file_test(src_fn, G_FILE_TEST_IS_DIR))
+		{
+			if (!g_file_test(dst_fn, G_FILE_TEST_IS_DIR))
+				g_mkdir_with_parents(dst_fn, 0700);
+			recursively_copy(src_fn, dst_fn);
+		}
+		else if (g_file_test(src_fn, G_FILE_TEST_IS_REGULAR) &&
+			g_str_has_suffix(src_fn, ".py"))
+		{
+			if (g_file_get_contents(src_fn, &code, NULL, NULL))
+			{
+				g_file_set_contents(dst_fn, code, -1, NULL);
+				g_free(code);
+				code = NULL;
+			}
+		}
+
+		g_free(src_fn);
+		g_free(dst_fn);
+	}
+}
+
+
 static void init_config(struct ZenCodingPlugin *plugin)
 {
 	gint i;
 	gchar *tmp, *settings, *sys_path, *user_path, *code = NULL;
-	gchar *mods[7] = {
-		"__init__.py",
-		"engine.py",
-		"html_matcher.py",
-		"htmlparser.py",
-		"stparser.py",
-		"zen_core.py",
-		"zen_settings.py"
-	};
 
 	g_free(plugin->config_dir);
 	plugin->config_dir = g_build_filename(geany->app->configdir, "plugins", "zencoding", NULL);
@@ -489,24 +524,9 @@ static void init_config(struct ZenCodingPlugin *plugin)
 		}
 	}
 
-	for (i = 0; i < 7; i++)
-	{
-		sys_path = g_build_filename(ZEN_ENGINE_MODULE_PATH, "zencoding", mods[i], NULL);
-		user_path = g_build_filename(tmp, mods[i], NULL);
+	sys_path = g_build_filename(ZEN_ENGINE_MODULE_PATH, "zencoding", NULL);
 
-		if (!g_file_test(user_path, G_FILE_TEST_EXISTS | G_FILE_TEST_IS_REGULAR))
-		{
-			if (g_file_get_contents(sys_path, &code, NULL, NULL))
-			{
-				g_file_set_contents(user_path, code, -1, NULL);
-				g_free(code);
-				code = NULL;
-			}
-		}
-
-		g_free(sys_path);
-		g_free(user_path);
-	}
+	recursively_copy(sys_path, tmp);
 
 	settings = g_build_filename(tmp, "zen_settings.py", NULL);
 	plugin->settings_file = g_file_new_for_path(settings);
@@ -518,6 +538,7 @@ static void init_config(struct ZenCodingPlugin *plugin)
 		g_signal_connect(plugin->monitor, "changed", G_CALLBACK(on_monitor_changed), plugin);
 
 	g_free(tmp);
+	g_free(sys_path);
 }
 
 

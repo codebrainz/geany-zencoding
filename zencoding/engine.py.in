@@ -21,7 +21,8 @@
 import os
 import sys
 from ConfigParser import SafeConfigParser
-from zencoding import zen_core as zen
+import zencoding
+import zencoding.utils
 
 
 DEFAULT_ZENDIR = '@DEFAULT_ZENDIR@'
@@ -52,7 +53,6 @@ class ZenEngine(object):
 		self.doc_type = doc_type
 		self._zendir = zendir
 
-
 		self._profiles_dir = profiles_dir
 		self.active_profile = active_profile
 
@@ -61,7 +61,7 @@ class ZenEngine(object):
 
 	def _init_profiles(self):
 
-		zen.setup_profile(DEFAULT_PROFILE, DEFAULT_PROFILE_DICT)
+		zencoding.utils.setup_profile(DEFAULT_PROFILE, DEFAULT_PROFILE_DICT)
 
 		for cfg_file in os.listdir(self._profiles_dir):
 
@@ -105,23 +105,23 @@ class ZenEngine(object):
 					else:
 						d['self_closing_tag'] = p.getboolean('profile', 'self_closing_tag')
 
-				zen.setup_profile(name, d)
+				zencoding.utils.setup_profile(name, d)
 
 
-	def expand_abbreviation(self, line, index):
+	def expand_abbreviation(self, line):
 
-		abbr, abbr_pos = zen.find_abbr_in_line(line.strip(), index)
+		abbr = zencoding.utils.extract_abbreviation(line)
 		if not abbr:
 			return ""
-		text = zen.expand_abbreviation(abbr, self.doc_type, self.active_profile)
-		return abbr, abbr_pos, text
+		text = zencoding.expand_abbreviation(abbr, self.doc_type, self.active_profile)
+		return abbr, text
 
 
 	def wrap_with_abbreviation(self, abbr, text):
 
 		if abbr.endswith('>'):
 			abbr = abbr[:-1]
-		text = zen.wrap_with_abbreviation(abbr, text, self.doc_type, self.active_profile)
+		text = zencoding.wrap_with_abbreviation(abbr, text, self.doc_type, self.active_profile)
 		if not text:
 			return ""
 		else:

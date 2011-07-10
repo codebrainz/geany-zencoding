@@ -79,9 +79,7 @@ void		zen_engine_set_doc_type				(ZenEngine *zen,
 
 char*		zen_engine_expand_abbreviation		(ZenEngine *zen,
 													const char *line,
-													int index,
-													char **abbr,
-													int *abbr_pos);
+													char **abbr);
 
 
 char*		zen_engine_wrap_with_abbreviation	(ZenEngine *zen,
