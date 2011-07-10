@@ -69,3 +69,5 @@ stamp-*
 # Other #
 #########
 /bkup/
+*.pyc
+engine.py
