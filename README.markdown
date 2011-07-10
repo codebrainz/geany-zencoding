@@ -71,7 +71,7 @@ abbreviation.  You can also activate this action by selecting the menu item
 
 You can select the profile you wish to use by selecting a profile under
 `Tools->Zen Coding->Profile`.  Custom profiles can be installed under your
-home directory, typically `~/.config/geanyplugins/zencoding/profiles`.  These
+home directory, typically `~/.config/geany/plugins/zencoding/profiles`.  These
 are just standard config/ini files with the group `[profile]` and having the
 key `name` as well as zero or more Zen Coding profile dictionary keys/values.
 
@@ -81,15 +81,39 @@ You can edit the Zen Coding settings module by choosing the menu item
 `Tools->Zen Coding->Open Zen Coding settings file`.  This will open the module
 used to control the Zen Coding engine.  You can also just open and edit this
 file from it's location on disk, typically
-`~/.config/geany/plugins/zencoding/zen_settings.py`.
+`~/.config/geany/plugins/zencoding/zencoding/zen_settings.py`.  The plugin
+will detect when this file has been updated and it will reload itself.
 
 #### Reset Settings
 
 You can reset the settings file by just deleting it from your home directory,
-typically `~/.config/geany/plugins/zencoding/zen_settings.py`.
+typically `~/.config/geany/plugins/zencoding/zencoding/zen_settings.py`.
 
 Dependencies
 ------------
 
 * Geany plugin development package (including GTK+/GLib)
-* Python 2.6+
+* Python 2.6+ development package
+
+Hacking
+-------
+
+There's a few parts to the Zen Coding plugin.  The first, obviously, is the
+actual Zen Coding Python code.  You can easily upgrade the Zen Coding portion
+of the plugin by either replacing the relevant Zen Coding Python modules,
+typically in `~/.config/geany/plugins/zencoding/zencoding` or deleting those
+package files and replacing the system-wide Zen Coding package files, typically
+in `/usr/local/lib/geany/zencoding`.  The second part is the `ZenEngine` Python
+class which is found in `engine.py`.  This class is designed for easy access
+from the C code which interacts with it.  The third part is a small helper
+library, `libzencoding`, which glues the Python `ZenEngine` class into C-land
+using the Python C API.  Lastly, the fourth part is `plugin.c` which is the
+actual Geany plugin that uses the `ZenEngine` glue and controls interaction
+from the Geany interface to the `libzencoding` library.
+
+Bugs
+----
+
+* No support for changing doc_type.
+* Only system-wide profiles currently loaded.
+* Need better icons.
