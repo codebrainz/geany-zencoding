@@ -54,6 +54,7 @@ static struct ZenCodingPlugin
 	const gchar*	active_profile;
 	const gchar*	doc_type;
 	ZenEngine*		zen;
+	char*			orig_text;
 }
 plugin;
 
@@ -119,22 +120,13 @@ static void on_expand_abbreviation(GtkMenuItem *menuitem, struct ZenCodingPlugin
 
 static void handle_wrap_abbreviation(struct ZenCodingPlugin *plugin, const gchar *abbr)
 {
-	char *text;
+	gchar *text, *sel_text;
 	GeanyDocument *doc = document_get_current();
 
 	if (doc == NULL || doc->editor == NULL || doc->editor->sci == NULL)
 		return;
 
-	gint sel_start = sci_get_selection_start(doc->editor->sci);
-	gint sel_end = sci_get_selection_end(doc->editor->sci);
-	gchar *sel_text = sci_get_selection_contents(doc->editor->sci);
-
-	/*
-	g_debug("Abbreviation entered: %s", abbr);
-	g_debug("Selected text starting at '%d', ending at '%d'", sel_start, sel_end);
-	g_debug("Actual text: %s", sel_text);
-	*/
-
+	sel_text = sci_get_selection_contents(doc->editor->sci);
 	text = zen_engine_wrap_with_abbreviation(plugin->zen, abbr, sel_text);
 
 	if (text != NULL)
@@ -151,6 +143,32 @@ static void handle_wrap_abbreviation(struct ZenCodingPlugin *plugin, const gchar
 
 #if GTK_CHECK_VERSION(2, 18, 0)
 
+static void on_entry_text_changed(GObject *gobject, GParamSpec *pspec,
+	struct ZenCodingPlugin *plugin)
+{
+	gchar *text, *sel_text;
+	const gchar *abbr;
+
+	GeanyDocument *doc = document_get_current();
+
+	if (doc == NULL || doc->editor == NULL || doc->editor->sci == NULL)
+		return;
+
+	sel_text = sci_get_selection_contents(doc->editor->sci);
+
+	abbr = gtk_entry_get_text(GTK_ENTRY(gobject));
+
+	text =  zen_engine_wrap_with_abbreviation(plugin->zen, abbr, sel_text);
+
+	if (text != NULL)
+	{
+		gtk_widget_set_tooltip_text(GTK_WIDGET(gobject), text);
+		g_free(text);
+	}
+
+	g_free(sel_text);
+}
+
 static void on_info_bar_response(GtkInfoBar *info_bar, guint response_id,
 	struct ZenCodingPlugin *plugin)
 {
@@ -158,6 +176,10 @@ static void on_info_bar_response(GtkInfoBar *info_bar, guint response_id,
 	GtkWidget *nb;
 	GtkEntry *entry;
 	GeanyDocument *doc;
+
+	doc = document_get_current();
+	if (doc == NULL || doc->editor == NULL || doc->editor->sci == NULL)
+		return;
 
 	if (response_id == GTK_RESPONSE_ACCEPT)
 	{
@@ -176,9 +198,7 @@ static void on_info_bar_response(GtkInfoBar *info_bar, guint response_id,
 	gtk_widget_show_all(nb);
 	gtk_widget_unref(nb);
 
-	doc = document_get_current();
-	if (doc != NULL && doc->editor != NULL && doc->editor->sci != NULL)
-		gtk_widget_grab_focus(GTK_WIDGET(doc->editor->sci));
+	gtk_widget_grab_focus(GTK_WIDGET(doc->editor->sci));
 }
 
 /* TODO: make this handle the Devhelp plugin's main notebook */
@@ -187,6 +207,11 @@ static char *do_wrap_abbreviation(struct ZenCodingPlugin *plugin)
 	GtkWidget *info_bar, *input, *content_area;
 	GtkWidget *vbox, *parent;
 	GtkWidget *nb;
+	GeanyDocument *doc;
+
+	doc = document_get_current();
+	if (doc == NULL || doc->editor == NULL || doc->editor->sci == NULL)
+		return NULL;
 
 	info_bar = gtk_info_bar_new_with_buttons(
 					GTK_STOCK_CANCEL,
@@ -201,6 +226,7 @@ static char *do_wrap_abbreviation(struct ZenCodingPlugin *plugin)
 	gtk_widget_show(input);
 	gtk_entry_set_activates_default(GTK_ENTRY(input), TRUE);
 	gtk_container_add(GTK_CONTAINER(content_area), input);
+	g_signal_connect(input, "notify::text", G_CALLBACK(on_entry_text_changed), plugin);
 
 	g_object_set_data(G_OBJECT(info_bar), "entry", GTK_ENTRY(input));
 	g_signal_connect(info_bar, "response", G_CALLBACK(on_info_bar_response), plugin);
@@ -246,6 +272,7 @@ static char *do_wrap_abbreviation(struct ZenCodingPlugin *plugin)
 	content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
 	input = gtk_entry_new();
 	gtk_entry_set_activates_default(GTK_ENTRY(input), TRUE);
+	g_signal_connect(input, "notify::text", G_CALLBACK(on_entry_text_changed), plugin);
 
 	vbox = gtk_vbox_new(FALSE, 0);
 	gtk_box_pack_start(GTK_BOX(vbox), input, TRUE, TRUE, 0);
