@@ -42,7 +42,7 @@ struct _ZenController
 };
 
 
-ZenController *zen_controller_new(const char *zendir);
+ZenController *zen_controller_new(const char *zendir, const char *profiles_dir);
 void zen_controller_free(ZenController *zen);
 void zen_controller_run_action(ZenController *zen, const char *action_name);
 void zen_controller_set_active_profile(ZenController *zen, const char *profile);

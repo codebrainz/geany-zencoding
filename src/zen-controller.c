@@ -39,7 +39,7 @@ extern GeanyData		*geany_data;
 extern GeanyFunctions	*geany_functions;
 
 
-ZenController *zen_controller_new(const char *zendir)
+ZenController *zen_controller_new(const char *zendir, const char *profiles_dir)
 {
 	ZenController *result;
 	char zen_path[PATH_MAX + 20] = { 0 };
@@ -122,10 +122,8 @@ ZenController *zen_controller_new(const char *zendir)
 	Py_XDECREF(module);
 
 	result->editor = PyObject_CallObject(cls, NULL);
-	/*result->editor = PyInstance_New(cls, NULL, NULL);*/
 	if (result->editor == NULL)
 	{
-		//fprintf(stderr, "%s: %d: Here\n", __FILE__, __LINE__);
 		if (PyErr_Occurred())
 			PyErr_Print();
 		Py_XDECREF(cls);
@@ -176,6 +174,18 @@ ZenController *zen_controller_new(const char *zendir)
 		return NULL;
 	}
 
+	/* Initialize/setup profiles */
+	PyObject *res;
+	res = PyObject_CallMethod(result->editor, "init_profiles", "(s)", profiles_dir);
+	if (res == NULL)
+	{
+		if (PyErr_Occurred())
+			PyErr_Print();
+		g_warning("Unable to initialize profiles");
+	}
+	else
+		Py_XDECREF(res);
+
 	return result;
 }
 
@@ -222,7 +232,7 @@ void zen_controller_run_action(ZenController *zen, const char *action_name)
 	g_return_if_fail(zen != NULL);
 	g_return_if_fail(action_name != NULL);
 
-	ui_set_statusbar(TRUE, _("Zen Coding: Running '%s' action"), action_name);
+	ui_set_statusbar(FALSE, _("Zen Coding: Running '%s' action"), action_name);
 
 	doc = document_get_current();
 	if (!DOC_VALID(doc))

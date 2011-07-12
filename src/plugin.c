@@ -74,9 +74,10 @@ static struct ZenCodingPlugin
 plugin;
 
 
-
-
 static void init_config(struct ZenCodingPlugin *plugin);
+
+
+/* TODO: cleanup all the callbacks/keybindings/menu items */
 
 
 static void on_expand_abbreviation(GtkMenuItem *menuitem, struct ZenCodingPlugin *plugin)
@@ -84,9 +85,70 @@ static void on_expand_abbreviation(GtkMenuItem *menuitem, struct ZenCodingPlugin
 	zen_controller_run_action(plugin->zen_controller, "expand_abbreviation");
 }
 
+
+static void on_expand_abbreviation_keybinding(guint key_id)
+{
+	on_expand_abbreviation(NULL, &plugin);
+}
+
+
 static void on_expand_wrap(GtkMenuItem *menuitem, struct ZenCodingPlugin *plugin)
 {
 	zen_controller_run_action(plugin->zen_controller, "wrap_with_abbreviation");
+}
+
+
+static void on_expand_wrap_keybinding(guint key_id)
+{
+	on_expand_wrap(NULL, &plugin);
+}
+
+
+static void on_next_insertion_point(GtkMenuItem *menuitem, struct ZenCodingPlugin *plugin)
+{
+	zen_controller_run_action(plugin->zen_controller, "next_edit_point");
+}
+
+
+static void on_next_insertion_point_keybinding(guint key_id)
+{
+	on_next_insertion_point(NULL, &plugin);
+}
+
+
+static void on_previous_insertion_point(GtkMenuItem *menuitem, struct ZenCodingPlugin *plugin)
+{
+	zen_controller_run_action(plugin->zen_controller, "prev_edit_point");
+}
+
+
+static void on_previous_insertion_point_keybinding(guint key_id)
+{
+	on_previous_insertion_point(NULL, &plugin);
+}
+
+
+static void on_match_pair_outward(GtkMenuItem *item, struct ZenCodingPlugin *plugin)
+{
+	zen_controller_run_action(plugin->zen_controller, "match_pair_outward");
+}
+
+
+static void on_match_pair_outward_keybinding(guint key_id)
+{
+	on_match_pair_outward(NULL, &plugin);
+}
+
+
+static void on_match_pair_inward(GtkMenuItem *item, struct ZenCodingPlugin *plugin)
+{
+	zen_controller_run_action(plugin->zen_controller, "match_pair_inward");
+}
+
+
+static void on_match_pair_inward_keybinding(guint key_id)
+{
+	on_match_pair_inward(NULL, &plugin);
 }
 
 
@@ -98,18 +160,6 @@ static void on_profile_toggled(GtkCheckMenuItem *item, const gchar *profile_name
 		ui_set_statusbar(TRUE, _("Zen Coding: Selected profile '%s'"),
 			gtk_menu_item_get_label(GTK_MENU_ITEM(item)));
 	}
-}
-
-
-static void on_expand_abbreviation_keybinding(guint key_id)
-{
-	on_expand_abbreviation(NULL, &plugin);
-}
-
-
-static void on_expand_wrap_keybinding(guint key_id)
-{
-	on_expand_wrap(NULL, &plugin);
 }
 
 
@@ -164,6 +214,42 @@ static void build_zc_menu(GeanyKeyGroup *kg, struct ZenCodingPlugin *plugin)
 		(GeanyKeyCallback) on_expand_wrap_keybinding,
 		GDK_q, GDK_CONTROL_MASK | GDK_SHIFT_MASK, "wrap_abbreviation",
 		_("Wrap with Abbreviation"),
+		item);
+
+	item = gtk_menu_item_new_with_label(_("Next insertion point"));
+	g_signal_connect(item, "activate", G_CALLBACK(on_next_insertion_point), plugin);
+	gtk_menu_append(GTK_MENU(menu), item);
+	keybindings_set_item(kg, 2,
+		(GeanyKeyCallback) on_next_insertion_point_keybinding,
+		GDK_n, GDK_CONTROL_MASK | GDK_SHIFT_MASK, "next_insertion_point",
+		_("Next insertion point"),
+		item);
+
+	item = gtk_menu_item_new_with_label(_("Previous insertion point"));
+	g_signal_connect(item, "activate", G_CALLBACK(on_previous_insertion_point), plugin);
+	gtk_menu_append(GTK_MENU(menu), item);
+	keybindings_set_item(kg, 3,
+		(GeanyKeyCallback) on_previous_insertion_point_keybinding,
+		GDK_p, GDK_CONTROL_MASK | GDK_SHIFT_MASK, "previous_insertion_point",
+		_("Previous insertion point"),
+		item);
+
+	item = gtk_menu_item_new_with_label(_("Balance Tag Outward"));
+	g_signal_connect(item, "activate", G_CALLBACK(on_match_pair_outward), plugin);
+	gtk_menu_append(GTK_MENU(menu), item);
+	keybindings_set_item(kg, 4,
+		(GeanyKeyCallback) on_match_pair_outward_keybinding,
+		GDK_R, GDK_CONTROL_MASK | GDK_SHIFT_MASK, "match_pair_outward",
+		_("Balance Tag Outward"),
+		item);
+
+	item = gtk_menu_item_new_with_label(_("Balance Tag Inward"));
+	g_signal_connect(item, "activate", G_CALLBACK(on_match_pair_inward), plugin);
+	gtk_menu_append(GTK_MENU(menu), item);
+	keybindings_set_item(kg, 5,
+		(GeanyKeyCallback) on_match_pair_inward_keybinding,
+		GDK_L, GDK_CONTROL_MASK | GDK_SHIFT_MASK, "match_pair_inward",
+		_("Balance Tag Inward"),
 		item);
 
 	item = gtk_separator_menu_item_new();
@@ -259,7 +345,7 @@ static void on_monitor_changed(GFileMonitor *monitor, GFile *file,
 		if (plugin->zen_controller != NULL)
 			zen_controller_free(plugin->zen_controller);
 
-		plugin->zen_controller = zen_controller_new(plugin->config_dir);
+		plugin->zen_controller = zen_controller_new(plugin->config_dir, ZEN_PROFILES_PATH);
 
 		if (plugin->zen_controller == NULL)
 			g_warning(_("Failed re-initializing Zen Coding after settings change detected"));
@@ -405,13 +491,13 @@ void plugin_init(GeanyData *data)
 
 	memset(&plugin, 0, sizeof(struct ZenCodingPlugin));
 
-	kg = plugin_set_key_group(geany_plugin, "zencoding", 2, NULL);
+	kg = plugin_set_key_group(geany_plugin, "zencoding", 6, NULL);
 
 	build_zc_menu(kg, &plugin);
 
 	init_config(&plugin);
 
-	plugin.zen_controller = zen_controller_new(plugin.config_dir);
+	plugin.zen_controller = zen_controller_new(plugin.config_dir, ZEN_PROFILES_PATH);
 
 	zen_controller_set_active_profile(plugin.zen_controller, "xhtml");
 
