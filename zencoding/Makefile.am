@@ -1,7 +1,7 @@
 SUBDIRS = actions filters interface parser
 
+
 zencoding_sources			=	__init__.py \
-								engine.py \
 								html_matcher.py \
 								resources.py \
 								utils.py \
@@ -10,15 +10,8 @@ zencoding_objects			=	$(zencoding_sources:.py=.pyc)
 zencodingdir				=	$(libdir)/geany/zencoding
 zencoding_DATA				=	$(zencoding_sources) \
 								$(zencoding_objects)
-CLEANFILES					=	$(zencoding_objects) engine.py
+CLEANFILES					=	$(zencoding_objects)
 
 %.pyc: %.py
 	$(AM_V_GEN)$(PYTHON) -c "import py_compile; py_compile.compile('$<')"
 
-engine.py: engine.py.in
-	$(AM_V_GEN)$(SED) \
-		-e 's|@DEFAULT_ZENDIR[@]|$(libdir)/geany|g' \
-		-e 's|@DEFAULT_DOC_TYPE[@]|html|g' \
-		-e 's|@DEFAULT_PROFILE[@]|geany_profile|g' \
-		-e 's|@DEFAULT_PROFILE_DIR[@]|$(datadir)/geany/zencoding/profiles|g' \
-		$< > $@

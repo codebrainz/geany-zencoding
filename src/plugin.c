@@ -20,21 +20,38 @@
  *
  */
 
-#include "zen-engine.h"
 
+#include <Python.h>
 #include <string.h>
 #include <gtk/gtk.h>
 #include <gdk/gdkkeysyms.h>
 #include <geanyplugin.h>
+
+#include "zen-controller.h"
+#include "zen-editor.h"
 
 
 GeanyPlugin		*geany_plugin;
 GeanyData		*geany_data;
 GeanyFunctions	*geany_functions;
 
-#define ZENCODING_ICON	ZEN_ENGINE_ICONS_PATH "/zencoding.png"
-#define EXPAND_ICON		ZEN_ENGINE_ICONS_PATH "/expand.png"
-#define WRAP_ICON		ZEN_ENGINE_ICONS_PATH "/wrap.png"
+#ifndef ZEN_MODULE_PATH
+#define ZEN_MODULE_PATH "/usr/local/lib/geany"
+#endif
+
+#ifndef ZEN_PROFILES_PATH
+#define ZEN_PROFILES_PATH "/usr/local/share/geany/zencoding/profiles"
+#endif
+
+#ifndef ZEN_ICONS_PATH
+#define ZEN_ICONS_PATH "/usr/local/share/geany/zencoding/icons"
+#endif
+
+
+#define ZENCODING_ICON	ZEN_ICONS_PATH "/zencoding.png"
+#define EXPAND_ICON		ZEN_ICONS_PATH "/expand.png"
+#define WRAP_ICON		ZEN_ICONS_PATH "/wrap.png"
+
 
 PLUGIN_VERSION_CHECK(200)
 
@@ -52,11 +69,11 @@ static struct ZenCodingPlugin
 	GFileMonitor*	monitor;
 	GFile*			settings_file;
 	const gchar*	active_profile;
-	const gchar*	doc_type;
-	ZenEngine*		zen;
-	char*			orig_text;
+	ZenController*	zen_controller;
 }
 plugin;
+
+
 
 
 static void init_config(struct ZenCodingPlugin *plugin);
@@ -64,242 +81,12 @@ static void init_config(struct ZenCodingPlugin *plugin);
 
 static void on_expand_abbreviation(GtkMenuItem *menuitem, struct ZenCodingPlugin *plugin)
 {
-	int current_line, current_pos, line_pos, rel_pos, ret_abbr_pos = 0;
-	int insert_start, insert_end;
-	char *line, *ret_abbr = NULL, *text;
-	GeanyDocument *doc;
-
-	doc = document_get_current();
-	if (doc == NULL || doc->editor == NULL || doc->editor->sci == NULL)
-		return;
-
-	current_line = sci_get_current_line(doc->editor->sci);
-	line = sci_get_line(doc->editor->sci, current_line);
-
-	current_pos = sci_get_current_position(doc->editor->sci);
-	line_pos = sci_get_position_from_line(doc->editor->sci, current_line);
-	rel_pos = current_pos - line_pos;
-
-	if (line == NULL)
-		return;
-
-	if (strlen(line) == 0)
-	{
-		g_free(line);
-		return;
-	}
-
-	text = zen_engine_expand_abbreviation(plugin->zen, line, &ret_abbr);
-	if (text != NULL)
-	{
-		char *tmp = strstr(line, ret_abbr);
-		if (tmp != NULL)
-		{
-			ret_abbr_pos = tmp - line;
-			insert_start = line_pos + ret_abbr_pos;
-			insert_end = insert_start + strlen(ret_abbr);
-
-			sci_set_selection_start(doc->editor->sci, insert_start);
-			sci_set_selection_end(doc->editor->sci, insert_end);
-			sci_replace_sel(doc->editor->sci, text);
-		}
-
-		g_free(ret_abbr);
-		g_free(text);
-	}
-	else
-	{
-		ui_set_statusbar(FALSE,
-			_("Zen Coding: Unable to expand abbreviation near: %s"),
-			g_strstrip(line));
-	}
-
-	g_free(line);
+	zen_controller_run_action(plugin->zen_controller, "expand_abbreviation");
 }
-
-
-static void handle_wrap_abbreviation(struct ZenCodingPlugin *plugin, const gchar *abbr)
-{
-	gchar *text, *sel_text;
-	GeanyDocument *doc = document_get_current();
-
-	if (doc == NULL || doc->editor == NULL || doc->editor->sci == NULL)
-		return;
-
-	sel_text = sci_get_selection_contents(doc->editor->sci);
-	text = zen_engine_wrap_with_abbreviation(plugin->zen, abbr, sel_text);
-
-	if (text != NULL)
-	{
-		sci_replace_sel(doc->editor->sci, text);
-		g_free(text);
-	}
-	else
-		ui_set_statusbar(FALSE, "Unable to wrap with abbreviation '%s'", abbr);
-
-	g_free(sel_text);
-}
-
-
-#if GTK_CHECK_VERSION(2, 18, 0)
-
-static void on_entry_text_changed(GObject *gobject, GParamSpec *pspec,
-	struct ZenCodingPlugin *plugin)
-{
-	gchar *text, *sel_text;
-	const gchar *abbr;
-
-	GeanyDocument *doc = document_get_current();
-
-	if (doc == NULL || doc->editor == NULL || doc->editor->sci == NULL)
-		return;
-
-	sel_text = sci_get_selection_contents(doc->editor->sci);
-
-	abbr = gtk_entry_get_text(GTK_ENTRY(gobject));
-
-	text =  zen_engine_wrap_with_abbreviation(plugin->zen, abbr, sel_text);
-
-	if (text != NULL)
-	{
-		gtk_widget_set_tooltip_text(GTK_WIDGET(gobject), text);
-		g_free(text);
-	}
-
-	g_free(sel_text);
-}
-
-static void on_info_bar_response(GtkInfoBar *info_bar, guint response_id,
-	struct ZenCodingPlugin *plugin)
-{
-	GtkWidget *parent, *grandparent;
-	GtkWidget *nb;
-	GtkEntry *entry;
-	GeanyDocument *doc;
-
-	doc = document_get_current();
-	if (doc == NULL || doc->editor == NULL || doc->editor->sci == NULL)
-		return;
-
-	if (response_id == GTK_RESPONSE_ACCEPT)
-	{
-		entry = GTK_ENTRY(g_object_get_data(G_OBJECT(info_bar), "entry"));
-		handle_wrap_abbreviation(plugin, gtk_entry_get_text(entry));
-	}
-
-	parent = gtk_widget_get_parent(GTK_WIDGET(info_bar)); /* our vbox */
-	grandparent = gtk_widget_get_parent(GTK_WIDGET(parent)); /* hpaned or devhelp main notebook */
-
-	nb = gtk_widget_ref(geany->main_widgets->notebook);
-	gtk_container_remove(GTK_CONTAINER(parent), nb);
-	gtk_container_remove(GTK_CONTAINER(grandparent), GTK_WIDGET(parent));
-
-	gtk_container_add(GTK_CONTAINER(grandparent), nb);
-	gtk_widget_show_all(nb);
-	gtk_widget_unref(nb);
-
-	gtk_widget_grab_focus(GTK_WIDGET(doc->editor->sci));
-}
-
-/* TODO: make this handle the Devhelp plugin's main notebook */
-static char *do_wrap_abbreviation(struct ZenCodingPlugin *plugin)
-{
-	GtkWidget *info_bar, *input, *content_area;
-	GtkWidget *vbox, *parent;
-	GtkWidget *nb;
-	GeanyDocument *doc;
-
-	doc = document_get_current();
-	if (doc == NULL || doc->editor == NULL || doc->editor->sci == NULL)
-		return NULL;
-
-	info_bar = gtk_info_bar_new_with_buttons(
-					GTK_STOCK_CANCEL,
-					GTK_RESPONSE_REJECT,
-					GTK_STOCK_OK,
-					GTK_RESPONSE_ACCEPT,
-					NULL);
-
-	content_area = gtk_info_bar_get_content_area(GTK_INFO_BAR(info_bar));
-
-	input = gtk_entry_new();
-	gtk_widget_show(input);
-	gtk_entry_set_activates_default(GTK_ENTRY(input), TRUE);
-	gtk_container_add(GTK_CONTAINER(content_area), input);
-	g_signal_connect(input, "notify::text", G_CALLBACK(on_entry_text_changed), plugin);
-
-	g_object_set_data(G_OBJECT(info_bar), "entry", GTK_ENTRY(input));
-	g_signal_connect(info_bar, "response", G_CALLBACK(on_info_bar_response), plugin);
-
-	vbox = gtk_vbox_new(FALSE, 6);
-	gtk_widget_show(vbox);
-	parent = gtk_widget_get_parent(geany->main_widgets->notebook);
-
-	gtk_box_pack_start(GTK_BOX(vbox), info_bar, FALSE, TRUE, 0);
-
-	nb = gtk_widget_ref(geany->main_widgets->notebook);
-	gtk_container_remove(GTK_CONTAINER(parent), geany->main_widgets->notebook);
-	gtk_container_add(GTK_CONTAINER(parent), vbox);
-	gtk_box_pack_start(GTK_BOX(vbox), nb, TRUE, TRUE, 0);
-	gtk_widget_unref(nb);
-
-	gtk_info_bar_set_default_response(GTK_INFO_BAR(info_bar), GTK_RESPONSE_ACCEPT);
-	gtk_widget_show(info_bar);
-	gtk_window_set_focus(GTK_WINDOW(geany->main_widgets->window), input);
-}
-
-#else
-
-static char *do_wrap_abbreviation(struct ZenCodingPlugin *plugin)
-{
-	GtkWidget *dialog, *input, *content_area, *vbox;
-	gchar *abbr = NULL;
-	GeanyDocument *doc;
-
-	dialog = gtk_dialog_new_with_buttons("Enter Abbreviation",
-				GTK_WINDOW(geany->main_widgets->window),
-				GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-				GTK_STOCK_CANCEL,
-				GTK_RESPONSE_REJECT,
-				GTK_STOCK_OK,
-				GTK_RESPONSE_ACCEPT,
-				NULL);
-
-	gtk_dialog_set_has_separator(GTK_DIALOG(dialog), TRUE);
-	gtk_window_set_default_size(GTK_WINDOW(dialog), 300, -1);
-	gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_ACCEPT);
-
-	content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
-	input = gtk_entry_new();
-	gtk_entry_set_activates_default(GTK_ENTRY(input), TRUE);
-	g_signal_connect(input, "notify::text", G_CALLBACK(on_entry_text_changed), plugin);
-
-	vbox = gtk_vbox_new(FALSE, 0);
-	gtk_box_pack_start(GTK_BOX(vbox), input, TRUE, TRUE, 0);
-	gtk_container_set_border_width(GTK_CONTAINER(vbox), 12);
-	gtk_container_add(GTK_CONTAINER(content_area), vbox);
-
-	gtk_widget_show_all(vbox);
-
-	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT)
-	{
-		handle_wrap_abbreviation(plugin, gtk_entry_get_text(GTK_ENTRY(input)));
-
-		doc = document_get_current();
-		if (doc != NULL && doc->editor != NULL && doc->editor->sci != NULL)
-			gtk_widget_grab_focus(GTK_WIDGET(doc->editor->sci));
-	}
-
-	gtk_widget_destroy(dialog);
-
-	return abbr;
-}
-
-#endif /* GTK_CHECK_VERSION(2, 18, 0) - for GtkInfo support */
 
 static void on_expand_wrap(GtkMenuItem *menuitem, struct ZenCodingPlugin *plugin)
 {
-	do_wrap_abbreviation(plugin);
+	zen_controller_run_action(plugin->zen_controller, "wrap_with_abbreviation");
 }
 
 
@@ -307,7 +94,7 @@ static void on_profile_toggled(GtkCheckMenuItem *item, const gchar *profile_name
 {
 	if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(item)))
 	{
-		zen_engine_set_active_profile(plugin.zen, profile_name);
+		zen_controller_set_active_profile(plugin.zen_controller, profile_name);
 		ui_set_statusbar(TRUE, _("Zen Coding: Selected profile '%s'"),
 			gtk_menu_item_get_label(GTK_MENU_ITEM(item)));
 	}
@@ -353,6 +140,7 @@ static void build_zc_menu(GeanyKeyGroup *kg, struct ZenCodingPlugin *plugin)
 	plugin->main_menu_item = gtk_image_menu_item_new_with_label(_("Zen Coding"));
 	img = gtk_image_new_from_file(ZENCODING_ICON);
 	gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(plugin->main_menu_item), img);
+	ui_add_document_sensitive(plugin->main_menu_item);
 
 	gtk_menu_item_set_submenu(GTK_MENU_ITEM(plugin->main_menu_item), menu);
 
@@ -426,14 +214,14 @@ static void build_zc_menu(GeanyKeyGroup *kg, struct ZenCodingPlugin *plugin)
 	gtk_menu_append(GTK_MENU(pmenu), item);
 	g_signal_connect(item, "toggled", G_CALLBACK(on_profile_toggled), "xml");
 
-	dir = g_dir_open(ZEN_ENGINE_PROFILES_PATH, 0, NULL);
+	dir = g_dir_open(ZEN_PROFILES_PATH, 0, NULL);
 	if (dir != NULL)
 	{
 
 		while ((ent = g_dir_read_name(dir)) != NULL)
 		{
 			/* TODO: add error handling */
-			gchar *p = g_build_filename(ZEN_ENGINE_PROFILES_PATH, ent, NULL);
+			gchar *p = g_build_filename(ZEN_PROFILES_PATH, ent, NULL);
 			GKeyFile *kf = g_key_file_new();
 			g_key_file_load_from_file(kf, p, G_KEY_FILE_KEEP_COMMENTS | G_KEY_FILE_KEEP_TRANSLATIONS, NULL);
 			if (g_key_file_has_group(kf, "profile") && g_key_file_has_key(kf, "profile", "name", NULL))
@@ -468,13 +256,12 @@ static void on_monitor_changed(GFileMonitor *monitor, GFile *file,
 	if (event_type == G_FILE_MONITOR_EVENT_CHANGED ||
 		event_type == G_FILE_MONITOR_EVENT_CREATED)
 	{
-		if (plugin->zen != NULL)
-			zen_engine_free(plugin->zen);
+		if (plugin->zen_controller != NULL)
+			zen_controller_free(plugin->zen_controller);
 
-		plugin->zen = zen_engine_new(plugin->doc_type, plugin->config_dir,
-						plugin->active_profile, ZEN_ENGINE_PROFILES_PATH);
+		plugin->zen_controller = zen_controller_new(plugin->config_dir);
 
-		if (plugin->zen == NULL)
+		if (plugin->zen_controller == NULL)
 			g_warning(_("Failed re-initializing Zen Coding after settings change detected"));
 		else
 			ui_set_statusbar(TRUE, _("Zen Coding: Re-initialized after settings change detected"));
@@ -487,10 +274,52 @@ static void on_monitor_changed(GFileMonitor *monitor, GFile *file,
 }
 
 
+static gboolean copy_file(const gchar *src, const gchar *dst)
+{
+	gboolean result = TRUE;
+	gint ch;
+	FILE *fpsrc, *fpdst;
+
+	fpsrc = fopen(src, "rb");
+	if (fpsrc == NULL)
+		return FALSE;
+
+	fpdst = fopen(dst, "wb");
+	if (fpdst == NULL)
+		return FALSE;
+
+	while (!feof(fpsrc))
+	{
+		ch = getc(fpsrc);
+		if (ferror(fpsrc))
+		{
+			result = FALSE;
+			break;
+		}
+		else
+		{
+			if (!feof(fpsrc))
+				putc(ch, fpdst);
+			if (ferror(fpdst))
+			{
+				result = FALSE;
+				break;
+			}
+		}
+	}
+
+	fclose(fpsrc);
+	fclose(fpdst);
+
+	return result;
+}
+
+
 static void recursively_copy(const char *src, const char *dst)
 {
 	GDir *dir;
-	char *src_fn, *dst_fn, *code;
+
+	char *src_fn, *dst_fn;
 	const char *ent;
 
 	dir = g_dir_open(src, 0, NULL);
@@ -510,14 +339,10 @@ static void recursively_copy(const char *src, const char *dst)
 			recursively_copy(src_fn, dst_fn);
 		}
 		else if (g_file_test(src_fn, G_FILE_TEST_IS_REGULAR) &&
-			g_str_has_suffix(src_fn, ".py"))
+			(g_str_has_suffix(src_fn, ".py") || g_str_has_suffix(src_fn, ".so")))
 		{
-			if (g_file_get_contents(src_fn, &code, NULL, NULL))
-			{
-				g_file_set_contents(dst_fn, code, -1, NULL);
-				g_free(code);
-				code = NULL;
-			}
+			if (!copy_file(src_fn, dst_fn))
+				g_warning("An error occurred copy file '%s' to '%s'.", src_fn, dst_fn);
 		}
 
 		g_free(src_fn);
@@ -551,7 +376,7 @@ static void init_config(struct ZenCodingPlugin *plugin)
 		}
 	}
 
-	sys_path = g_build_filename(ZEN_ENGINE_MODULE_PATH, "zencoding", NULL);
+	sys_path = g_build_filename(ZEN_MODULE_PATH, "zencoding", NULL);
 
 	recursively_copy(sys_path, tmp);
 
@@ -581,14 +406,9 @@ void plugin_init(GeanyData *data)
 
 	init_config(&plugin);
 
-	plugin.active_profile = "geany_profile";
-	plugin.doc_type = "html"; /* fixme */
+	plugin.zen_controller = zen_controller_new(plugin.config_dir);
 
-	plugin.zen = zen_engine_new(plugin.doc_type, ZEN_ENGINE_MODULE_PATH,
-					plugin.active_profile, ZEN_ENGINE_PROFILES_PATH);
-
-	if (plugin.zen == NULL)
-		g_warning(_("Failed initializing Zen Coding engine"));
+	zen_controller_set_active_profile(plugin.zen_controller, "xhtml");
 }
 
 
@@ -598,5 +418,5 @@ void plugin_cleanup(void)
 	g_free(plugin.config_dir);
 	g_object_unref(plugin.settings_file);
 	g_object_unref(plugin.monitor);
-	zen_engine_free(plugin.zen);
+	zen_controller_free(plugin.zen_controller);
 }
