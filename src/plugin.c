@@ -398,6 +398,11 @@ void plugin_init(GeanyData *data)
 {
 	GeanyKeyGroup *kg;
 
+	/*
+	if (!g_thread_supported())
+		g_thread_init(NULL);
+	*/
+
 	memset(&plugin, 0, sizeof(struct ZenCodingPlugin));
 
 	kg = plugin_set_key_group(geany_plugin, "zencoding", 2, NULL);
@@ -409,6 +414,15 @@ void plugin_init(GeanyData *data)
 	plugin.zen_controller = zen_controller_new(plugin.config_dir);
 
 	zen_controller_set_active_profile(plugin.zen_controller, "xhtml");
+
+	g_print("Zen Coding Plugin - Version Information\n"
+			"---------------------------------------\n"
+			"  GTK+ Version: %d.%d.%d\n"
+			"  GLib Version: %d.%d.%d\n"
+			"  Python Version: %s\n",
+			gtk_major_version, gtk_minor_version, gtk_micro_version,
+			glib_major_version, glib_minor_version, glib_micro_version,
+			Py_GetVersion());
 }
 
 

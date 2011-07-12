@@ -51,8 +51,7 @@ ZenController *zen_controller_new(const char *zendir)
 	result->set_context = NULL;
 	result->set_active_profile = NULL;
 
-	if (!Py_IsInitialized())
-		Py_Initialize();
+	Py_Initialize();
 
 	PyRun_SimpleString("import sys");
 	snprintf(zen_path, PATH_MAX + 20 - 1, "sys.path.append('%s')", zendir);
@@ -66,6 +65,18 @@ ZenController *zen_controller_new(const char *zendir)
 		free(result);
 		return NULL;
 	}
+
+	/*
+	 * For some reason on Python 2.7.0+ "pre-importing" these prevents a
+	 * segfault below in zen_controller_run_action() where it calls the
+	 * Zen Coding run_action() function.
+	 *
+	 * I would *LOVE* to know what's going on, I've spent far too long trying
+	 * to debug this :)
+	 */
+	PyRun_SimpleString("import zencoding.actions");
+	PyRun_SimpleString("import zencoding.filters");
+	PyRun_SimpleString("import zencoding.utils");
 
 	result->run_action = PyObject_GetAttrString(module, "run_action");
 	if (result->run_action == NULL)
@@ -208,6 +219,9 @@ void zen_controller_run_action(ZenController *zen, const char *action_name)
 	PyObject *addr, *result;
 	GeanyDocument *doc;
 
+	g_return_if_fail(zen != NULL);
+	g_return_if_fail(action_name != NULL);
+
 	ui_set_statusbar(TRUE, _("Zen Coding: Running '%s' action"), action_name);
 
 	doc = document_get_current();
@@ -235,8 +249,8 @@ void zen_controller_run_action(ZenController *zen, const char *action_name)
 		g_warning("Unable to call set_context() function.");
 		return;
 	}
+	Py_XDECREF(result);
 
-	/* FIXME - shouldn't need extra args */
 	result = PyObject_CallFunction(zen->run_action, "sO", action_name, zen->editor);
 	if (result == NULL)
 	{
@@ -245,6 +259,5 @@ void zen_controller_run_action(ZenController *zen, const char *action_name)
 		g_warning("Call to run_action() failed.");
 		return;
 	}
-
 	Py_XDECREF(result);
 }
