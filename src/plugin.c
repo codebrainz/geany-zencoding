@@ -76,11 +76,27 @@ plugin;
 enum
 {
 	ACTION_EXPAND_ABBR,
-	ACTION_WRAP_ABBR,
-	ACTION_NEXT_POINT,
-	ACTION_PREV_POINT,
+	ACTION_EXPAND_ABBR_TAB,
 	ACTION_MATCH_IN,
 	ACTION_MATCH_OUT,
+	ACTION_WRAP_ABBR,
+	ACTION_PREV_POINT,
+	ACTION_NEXT_POINT,
+	ACTION_INSERT_FORMAT_NEWLINE,
+	ACTION_SELECT_LINE,
+	ACTION_GO_TO_MATCHING_PAIR,
+	ACTION_MERGE_LINES,
+	ACTION_TOGGLE_COMMENTS,
+	ACTION_SPLIT_JOIN_TAG,
+	ACTION_REMOVE_TAG,
+	ACTION_ENCODE_DECODE_BASE64,
+	ACTION_INCREMENT_NUMBER_BY_1,
+	ACTION_INCREMENT_NUMBER_BY_10,
+	ACTION_INCREMENT_NUMBER_BY_01,
+	ACTION_DECREMENT_NUMBER_BY_1,
+	ACTION_DECREMENT_NUMBER_BY_10,
+	ACTION_DECREMENT_NUMBER_BY_01,
+	ACTION_EVALUATE_MATH_EXPRESSION,
 	ACTION_LAST
 };
 
@@ -97,11 +113,27 @@ static struct _ZenCodingAction
 actions[ACTION_LAST] = {
 
 	{ "expand_abbreviation", _("Expand Abbreviation"), GDK_e, GDK_SHIFT_MASK | GDK_CONTROL_MASK },
-	{ "wrap_with_abbreviation", _("Wrap with Abbreviation"), GDK_q, GDK_SHIFT_MASK | GDK_CONTROL_MASK },
-	{ "next_edit_point", _("Next Edit Point"), GDK_n, GDK_SHIFT_MASK | GDK_CONTROL_MASK },
-	{ "prev_edit_point", _("Previous Edit Point"), GDK_p, GDK_SHIFT_MASK | GDK_CONTROL_MASK },
+	{ "expand_abbreviation_with_tab", _("Expand Abbreviation with Tab"), GDK_T, GDK_SHIFT_MASK | GDK_CONTROL_MASK },
 	{ "match_pair_inward", _("Match Tag Inward"), GDK_L, GDK_SHIFT_MASK | GDK_CONTROL_MASK },
-	{ "match_pair_outward", _("Match Tag Outward"), GDK_R, GDK_SHIFT_MASK | GDK_CONTROL_MASK }
+	{ "match_pair_outward", _("Match Tag Outward"), GDK_R, GDK_SHIFT_MASK | GDK_CONTROL_MASK },
+	{ "wrap_with_abbreviation", _("Wrap with Abbreviation"), GDK_q, GDK_SHIFT_MASK | GDK_CONTROL_MASK },
+	{ "prev_edit_point", _("Previous Edit Point"), GDK_p, GDK_SHIFT_MASK | GDK_CONTROL_MASK },
+	{ "next_edit_point", _("Next Edit Point"), GDK_n, GDK_SHIFT_MASK | GDK_CONTROL_MASK },
+	{ "insert_formatted_newline", _("Insert Formatted Newline"), GDK_l, GDK_SHIFT_MASK | GDK_CONTROL_MASK },
+	{ "select_line", _("Select Line"), GDK_s, GDK_SHIFT_MASK | GDK_CONTROL_MASK },
+	{ "go_to_matching_pair", _("Go to Matching Pair"), GDK_m, GDK_SHIFT_MASK | GDK_CONTROL_MASK },
+	{ "merge_lines", _("Merge Lines"), GDK_b, GDK_SHIFT_MASK | GDK_CONTROL_MASK },
+	{ "toggle_comment", _("Toggle Comment"), GDK_c, GDK_SHIFT_MASK | GDK_CONTROL_MASK },
+	{ "split_join_tag", _("Split or Join Tag"), GDK_j, GDK_SHIFT_MASK | GDK_CONTROL_MASK },
+	{ "remove_tag", _("Remove Tag"), GDK_r, GDK_SHIFT_MASK | GDK_CONTROL_MASK },
+	{ "encode_decode_base64", _("Encode/Decode to/from Base64"), GDK_6, GDK_SHIFT_MASK | GDK_CONTROL_MASK },
+	{ "increment_number_by_1", _("Increment Number by 1"), 0, 0 },
+	{ "increment_number_by_10", _("Increment Number by 10"), 0, 0 },
+	{ "increment_number_by_01", _("Increment Number by 0.1"), 0, 0 },
+	{ "decrement_number_by_1", _("Decrement Number by 1"), 0, 0 },
+	{ "decrement_number_by_10", _("Decrement Number by 10"), 0, 0 },
+	{ "decrement_number_by_01", _("Decrement Number by 0.1"), 0, 0 },
+	{ "evaluate_math_expression", _("Evaluate Math Expression"), 0, 0 }
 
 };
 
