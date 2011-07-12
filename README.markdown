@@ -122,25 +122,10 @@ Dependencies
 * Geany plugin development package (including GTK+/GLib)
 * Python 2.6+ development package
 
-Hacking
--------
-
-There's a few parts to the Zen Coding plugin.  The first, obviously, is the
-actual Zen Coding Python code.  You can easily upgrade the Zen Coding portion
-of the plugin by either replacing the relevant Zen Coding Python modules,
-typically in `~/.config/geany/plugins/zencoding/zencoding` or deleting those
-package files and replacing the system-wide Zen Coding package files, typically
-in `/usr/local/lib/geany/zencoding`.  The second part is the `ZenEngine` Python
-class which is found in `engine.py`.  This class is designed for easy access
-from the C code which interacts with it.  The third part is a small helper
-library, `libzencoding`, which glues the Python `ZenEngine` class into C-land
-using the Python C API.  Lastly, the fourth part is `plugin.c` which is the
-actual Geany plugin that uses the `ZenEngine` glue and controls interaction
-from the Geany interface to the `libzencoding` library.
-
 Bugs
 ----
 
 * No support for changing doc_type.
 * Only system-wide profiles currently loaded.
 * Need better icons.
+* Lots of other stuff not implemented, or otherwise.
