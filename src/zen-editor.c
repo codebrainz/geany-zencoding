@@ -40,6 +40,8 @@ extern GeanyFunctions	*geany_functions;
 
 /*#define ZEN_EDITOR_DEBUG 1*/
 
+
+#ifdef ZEN_EDITOR_DEBUG
 static void _debug_print(const char *file, int line, const char *function, const char *fmt, ...)
 {
 	va_list ap;
@@ -56,13 +58,28 @@ static void _debug_print(const char *file, int line, const char *function, const
 
 	g_free(format);
 }
-#ifdef ZEN_EDITOR_DEBUG
 #define dbg(fmt, ...) _debug_print(__FILE__, __LINE__, NULL, fmt, ##__VA_ARGS__)
-#define dbgf(func, fmt, ...) _debug_print(__FILE__, __LINE__, func, fmt, ##__VA_ARGS__)
+#define dbgf(fmt, ...) _debug_print(__FILE__, __LINE__, __FUNCTION__, fmt, ##__VA_ARGS__)
+#define print_called() _debug_print(__FILE__, __LINE__, __FUNCTION__, "%s", "called")
 #else
 #define dbg(fmt, ...)
-#define dbgf(func, fmt, ...)
+#define dbgf(fmt, ...)
+#define print_called()
 #endif
+
+
+#define py_return_none_if_null(v) \
+{ \
+	if ((v) == NULL) \
+	{ \
+		if (PyErr_Occurred()) \
+		{ \
+			PyErr_Print(); \
+			PyErr_Clear(); \
+		} \
+		Py_RETURN_NONE; \
+	} \
+}
 
 
 typedef struct
@@ -82,16 +99,13 @@ ZenEditor_get_context(ZenEditor *self)
 {
 	GeanyDocument *doc;
 
-	dbgf("ZenEditor_get_context", "called");
+	print_called();
 
-	if (self->context != NULL)
-	{
-		doc = (GeanyDocument *) PyLong_AsVoidPtr(self->context);
-		if (DOC_VALID(doc))
-			return doc;
-	}
+	if (self->context == NULL)
+		return NULL;
 
-	return NULL;
+	doc = (GeanyDocument *) PyLong_AsVoidPtr(self->context);
+	return DOC_VALID(doc) ? doc : NULL;
 }
 
 
@@ -100,7 +114,7 @@ ZenEditor_get_scintilla(ZenEditor *self)
 {
 	GeanyDocument *doc;
 
-	dbgf("ZenEditor_get_scintilla", "called");
+	print_called();
 
 	doc = ZenEditor_get_context(self);
 	if (doc == NULL || doc->editor == NULL || doc->editor->sci == NULL)
@@ -116,34 +130,28 @@ ZenEditor_get_selection_range(ZenEditor *self, PyObject *args)
 	PyObject *result;
 	ScintillaObject *sci;
 
-	dbgf("ZenEditor_get_selection_range", "called");
+	print_called();
+	py_return_none_if_null(sci = ZenEditor_get_scintilla(self));
 
-	if ((sci = ZenEditor_get_scintilla(self)) == NULL)
-	{
-		Py_RETURN_NONE;
-	}
-	else
-	{
-		result = Py_BuildValue("(ii)",
-					sci_get_selection_start(sci),
-					sci_get_selection_end(sci));
-		return result;
-	}
+	result = Py_BuildValue("(ii)",
+				sci_get_selection_start(sci),
+				sci_get_selection_end(sci));
+	py_return_none_if_null(result);
+
+	return result;
 }
 
 
 static PyObject *
 ZenEditor_create_selection(ZenEditor *self, PyObject *args)
 {
-	gint sel_start, sel_end;
+	gint sel_start = -1, sel_end = -1;
 	ScintillaObject *sci;
 
-	dbgf("ZenEditor_create_selection", "called");
+	print_called();
+	py_return_none_if_null(sci = ZenEditor_get_scintilla(self));
 
-	if ((sci = ZenEditor_get_scintilla(self)) == NULL)
-		Py_RETURN_NONE;
-
-	if (PyArg_ParseTuple(args, "ii", &sel_start, &sel_end))
+	if (PyArg_ParseTuple(args, "i|i", &sel_start, &sel_end))
 	{
 		if (sel_end == -1)
 			sci_set_current_position(sci, sel_start, TRUE);
@@ -165,10 +173,8 @@ ZenEditor_get_current_line_range(ZenEditor *self, PyObject *args)
 	gint line, line_start, line_end;
 	ScintillaObject *sci;
 
-	dbgf("ZenEditor_current_line_range", "called");
-
-	if ((sci = ZenEditor_get_scintilla(self)) == NULL)
-		Py_RETURN_NONE;
+	print_called();
+	py_return_none_if_null(sci = ZenEditor_get_scintilla(self));
 
 	line = sci_get_current_line(sci);
 	line_start = sci_get_position_from_line(sci, line);
@@ -186,10 +192,8 @@ ZenEditor_get_caret_pos(ZenEditor *self, PyObject *args)
 	gint pos;
 	ScintillaObject *sci;
 
-	dbgf("ZenEditor_get_caret_pos", "called");
-
-	if ((sci = ZenEditor_get_scintilla(self)) == NULL)
-		Py_RETURN_NONE;
+	print_called();
+	py_return_none_if_null(sci = ZenEditor_get_scintilla(self));
 
 	pos = sci_get_current_position(sci);
 	result = Py_BuildValue("i", pos);
@@ -204,10 +208,8 @@ ZenEditor_set_caret_pos(ZenEditor *self, PyObject *args)
 	gint pos;
 	ScintillaObject *sci;
 
-	dbgf("ZenEditor_set_caret_pos", "called");
-
-	if ((sci = ZenEditor_get_scintilla(self)) == NULL)
-		Py_RETURN_NONE;
+	print_called();
+	py_return_none_if_null(sci = ZenEditor_get_scintilla(self));
 
 	if (PyArg_ParseTuple(args, "i", &pos))
 		sci_set_current_position(sci, pos, TRUE);
@@ -220,22 +222,27 @@ static PyObject *
 ZenEditor_get_current_line(ZenEditor *self, PyObject *args)
 {
 	PyObject *result;
-	gchar *text;
+	gchar *line;
 	ScintillaObject *sci;
 
-	dbgf("ZenEditor_get_current_line", "called");
 
-	if ((sci = ZenEditor_get_scintilla(self)) == NULL)
-		Py_RETURN_NONE;
+	print_called();
+	py_return_none_if_null(sci = ZenEditor_get_scintilla(self));
 
-	text = sci_get_line(sci, sci_get_current_line(sci));
-	result = Py_BuildValue("s", text);
-	g_free(text);
+	line = sci_get_line(sci, sci_get_current_line(sci));
+	result = Py_BuildValue("s", line);
+	g_free(line);
 
 	return result;
 }
 
 
+/*
+ * Removes caret placeholder from string and puts the position where the first
+ * placeholder was in the location pointed to by first_pos.  The value for
+ * first_pos will be -1 if there were no caret placeholders in the text.
+ * Returns a newly allocated string containing the placeholder-free text.
+ */
 static gchar *
 ZenEditor_replace_caret_placeholder(const gchar *placeholder,
 	const gchar *text, gint *first_pos)
@@ -243,12 +250,12 @@ ZenEditor_replace_caret_placeholder(const gchar *placeholder,
 	gint placeholder_pos, len;
 	gchar *new_text, **arr;
 
-	dbgf("ZenEditor_replace_caret_placeholder", "called");
+	print_called();
 
 	arr = g_strsplit(text, placeholder, 0);
 	len = g_strv_length(arr);
 
-	if (len >= 2)
+	if (len > 1)
 	{
 		placeholder_pos = strlen(arr[0]);
 		new_text = g_strjoinv(NULL, arr);
@@ -272,17 +279,14 @@ static PyObject *
 ZenEditor_replace_content(ZenEditor *self, PyObject *args)
 {
 	PyObject *result;
-	gint sel_start, sel_end, ph_pos;
+	gint sel_start = -1, sel_end = -1, ph_pos;
 	gchar *text, *ph, *tmp;
 	ScintillaObject *sci;
 
-	dbgf("ZenEditor_replace_content", "called");
+	print_called();
+	py_return_none_if_null(sci = ZenEditor_get_scintilla(self));
 
-	if ((sci = ZenEditor_get_scintilla(self)) == NULL)
-		Py_RETURN_NONE;
-
-	/* TODO: handle case of missing args, not -1 anymore */
-	if (PyArg_ParseTuple(args, "sii", &text, &sel_start, &sel_end))
+	if (PyArg_ParseTuple(args, "s|ii", &text, &sel_start, &sel_end))
 	{
 		tmp = ZenEditor_replace_caret_placeholder(self->caret_placeholder, text, &ph_pos);
 
@@ -305,20 +309,25 @@ ZenEditor_replace_content(ZenEditor *self, PyObject *args)
 		}
 		else
 		{
+			dbgf("Invalid arguments were supplied.");
 			g_free(tmp);
 			Py_RETURN_NONE;
 		}
 
-		/* Insert cursor at placeholder, if found */
-		if (ph_pos > -1)
-			sci_set_current_position(sci, sel_start+ph_pos, TRUE);
-
 		g_free(tmp);
+
+		/* Move cursor to first placeholder position, if found */
+		if (ph_pos > -1)
+			sci_set_current_position(sci, sel_start + ph_pos, TRUE);
+
 	}
 	else
 	{
 		if (PyErr_Occurred())
+		{
 			PyErr_Print();
+			PyErr_Clear();
+		}
 	}
 
 	Py_RETURN_NONE;
@@ -332,27 +341,17 @@ ZenEditor_get_content(ZenEditor *self, PyObject *args)
 	gchar *text;
 	ScintillaObject *sci;
 
-	dbgf("ZenEditor_get_content", "called");
-
-	if ((sci = ZenEditor_get_scintilla(self)) == NULL)
-		Py_RETURN_NONE;
+	print_called();
+	py_return_none_if_null(sci = ZenEditor_get_scintilla(self));
 
 	text = sci_get_contents(sci, sci_get_length(sci) + 1);
-	if (text != NULL)
-	{
-		result = PyString_FromString(text);
-		g_free(text);
-		if (result == NULL)
-		{
-			if (PyErr_Occurred())
-				PyErr_Print();
-			Py_RETURN_NONE;
-		}
-		else
-			return result;
-	}
+	py_return_none_if_null(text);
 
-	Py_RETURN_NONE;
+	result = PyString_FromString(text);
+	g_free(text);
+	py_return_none_if_null(result);
+
+	return result;
 }
 
 
@@ -363,10 +362,8 @@ ZenEditor_get_selection(ZenEditor *self, PyObject *args)
 	gchar *text;
 	ScintillaObject *sci;
 
-	dbgf("ZenEditor_get_selection", "called");
-
-	if ((sci = ZenEditor_get_scintilla(self)) == NULL)
-		Py_RETURN_NONE;
+	print_called();
+	py_return_none_if_null(sci = ZenEditor_get_scintilla(self));
 
 	text = sci_get_selection_contents(sci);
 	result = Py_BuildValue("s", text);
@@ -382,13 +379,9 @@ ZenEditor_get_file_path(ZenEditor *self, PyObject *args)
 	PyObject *result;
 	GeanyDocument *doc;
 
-	dbgf("ZenEditor_get_file_path", "called");
-
-	if ((doc = ZenEditor_get_context(self)) == NULL)
-		Py_RETURN_NONE;
-
-	if (doc->file_name == NULL)
-		Py_RETURN_NONE;
+	print_called();
+	py_return_none_if_null(doc = ZenEditor_get_context(self));
+	py_return_none_if_null(doc->file_name);
 
 	result = Py_BuildValue("s", doc->file_name);
 	return result;
@@ -402,7 +395,7 @@ ZenEditor_prompt(ZenEditor *self, PyObject *args)
 	GtkWidget *dialog, *input, *content_area, *vbox;
 	gchar *abbr = NULL, *title = NULL;
 
-	dbgf("ZenEditor_prompt", "called");
+	print_called();
 
 	if (!PyArg_ParseTuple(args, "s", &title) || title == NULL)
 		title = "Enter Abbreviation";
@@ -436,9 +429,9 @@ ZenEditor_prompt(ZenEditor *self, PyObject *args)
 
 	gtk_widget_destroy(dialog);
 
-	if (abbr == NULL)
-		Py_RETURN_NONE;
-	else if (strlen(abbr) == 0)
+	py_return_none_if_null(abbr);
+
+	if (strlen(abbr) == 0)
 	{
 		g_free(abbr);
 		Py_RETURN_NONE;
@@ -453,19 +446,18 @@ ZenEditor_set_context(ZenEditor *self, PyObject *args)
 {
 	PyObject *context = NULL, *tmp;
 
-	dbgf("ZenEditor_set_context", "called");
+	print_called();
 
 	if (PyArg_ParseTuple(args, "O", &context))
 	{
-		if (context != NULL)
+		py_return_none_if_null(context);
+
+		if (DOC_VALID((GeanyDocument *) PyLong_AsVoidPtr(context)))
 		{
-			if (DOC_VALID((GeanyDocument *) PyLong_AsVoidPtr(context)))
-			{
-				tmp = self->context;
-				Py_INCREF(context);
-				self->context = context;
-				Py_XDECREF(tmp);
-			}
+			tmp = self->context;
+			Py_INCREF(context);
+			self->context = context;
+			Py_XDECREF(tmp);
 		}
 	}
 
@@ -476,7 +468,7 @@ ZenEditor_set_context(ZenEditor *self, PyObject *args)
 static PyObject *
 ZenEditor_get_profile_name(ZenEditor *self, PyObject *args)
 {
-	dbgf("ZenEditor_get_profile_name", "called");
+	print_called();
 	return PyString_FromString("html");
 }
 
@@ -486,7 +478,7 @@ ZenEditor_set_profile_name(ZenEditor *self, PyObject *args)
 {
 	PyObject *profile = NULL, *tmp;
 
-	dbgf("ZenEditor_set_profile_name", "called");
+	print_called();
 
 	if (PyArg_ParseTuple(args, "s", &profile))
 	{
@@ -504,11 +496,18 @@ ZenEditor_set_profile_name(ZenEditor *self, PyObject *args)
 }
 
 
+/*
+ * FIXME: Write this in C using GKeyFile */
+/* Reads all of the .conf files in the passed in directory, parses them into
+ * Zen Coding profiles and then sets each of them up in using
+ * zencoding.utils.setup_profile().
+ */
 static PyObject *
 ZenEditor_init_profiles(ZenEditor *self, PyObject *args)
 {
 	gint result = -1;
 	gchar *profiles_dir = NULL, *runcode = NULL;
+	static gboolean has_run = 0;
 	static const gchar *runfmt =
 		"import os\n"
 		"from ConfigParser import SafeConfigParser\n"
@@ -545,23 +544,23 @@ ZenEditor_init_profiles(ZenEditor *self, PyObject *args)
 		"												'self_closing_tag')\n"
 		"			zencoding.utils.setup_profile(name, d)\n";
 
+	print_called();
 
-	if (runfmt == NULL) /* run once */
+	if (has_run)
 		Py_RETURN_TRUE;
 
 	if (PyArg_ParseTuple(args, "s", &profiles_dir))
 	{
-		if (profiles_dir != NULL)
-		{
-			runcode = g_strdup_printf(runfmt, profiles_dir, profiles_dir);
-			result = PyRun_SimpleString(runcode);
-			g_free(runcode);
-		}
+		py_return_none_if_null(profiles_dir);
+
+		runcode = g_strdup_printf(runfmt, profiles_dir, profiles_dir);
+		result = PyRun_SimpleString(runcode);
+		g_free(runcode);
 	}
 
 	if (result == 0)
 	{
-		runfmt = NULL;
+		has_run = TRUE;
 		Py_RETURN_TRUE;
 	}
 
@@ -572,7 +571,7 @@ ZenEditor_init_profiles(ZenEditor *self, PyObject *args)
 static PyObject *
 ZenEditor_get_syntax(ZenEditor *self, PyObject *args)
 {
-	dbgf("ZenEditor_get_syntax", "called");
+	print_called();
 	return PyString_FromString("html");
 }
 
@@ -580,7 +579,7 @@ ZenEditor_get_syntax(ZenEditor *self, PyObject *args)
 static void
 ZenEditor_dealloc(ZenEditor *self)
 {
-	dbgf("ZenEditor_dealloc", "called");
+	print_called();
 	Py_XDECREF(self->active_profile);
 	Py_XDECREF(self->context);
 	g_free(self->caret_placeholder);
@@ -593,7 +592,7 @@ ZenEditor_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
 	ZenEditor *self;
 
-	dbgf("ZenEditor_new", "called");
+	print_called();
 
 	self = (ZenEditor *)type->tp_alloc(type, 0);
 	if (self != NULL)
@@ -625,7 +624,7 @@ ZenEditor_init(ZenEditor *self, PyObject *args, PyObject *kwds)
 	const gchar *ph;
 	static gchar *kwlist[] = { "profile", "context", NULL };
 
-	dbgf("ZenEditor_init", "called");
+	print_called();
 
 	if (PyArg_ParseTupleAndKeywords(args, kwds, "|OO", kwlist,
 			&context, &profile))
