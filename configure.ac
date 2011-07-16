@@ -22,7 +22,7 @@ if [[ x"$PYTHON" = "xno" ]]; then
 fi
 
 # Check for headers, libraries and packages
-AC_CHECK_HEADERS([stdio.h string.h assert.h])
+AC_CHECK_HEADERS([stdio.h string.h assert.h limits.h dlfcn.h])
 PKG_CHECK_MODULES([gtk], [gtk+-2.0])
 PKG_CHECK_MODULES([geany], [geany])
 AX_PYTHON_DEVEL([>= '2.6'])

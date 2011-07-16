@@ -29,6 +29,7 @@
 
 #include <Python.h>
 #include <limits.h>
+#include <dlfcn.h>
 #include <geanyplugin.h>
 #include "zen-controller.h"
 #include "zen-editor.h"
@@ -37,6 +38,31 @@
 extern GeanyPlugin		*geany_plugin;
 extern GeanyData		*geany_data;
 extern GeanyFunctions	*geany_functions;
+
+
+/* FIXME:
+ *   A segfault occurs when loading/unloading the plugin, but it seems to
+ *   only happen every once in a while.  Grrrrr. */
+static void zen_controller_init_python(void)
+{
+	int i;
+	static const char *check_libs[4] = {
+			"libpython2.7.so",
+			"libpython2.6.so",
+			"libpython2.5.so",
+			"libpython2.4.so" };
+	static void *resident_pylib = NULL;
+
+	for (i = 0; i < 4; i++)
+	{
+		resident_pylib = dlopen(check_libs[i], RTLD_LAZY | RTLD_GLOBAL);
+		if (resident_pylib != NULL)
+			break;
+	}
+
+	if (!Py_IsInitialized())
+		Py_Initialize();
+}
 
 
 ZenController *zen_controller_new(const char *zendir, const char *profiles_dir)
@@ -51,7 +77,7 @@ ZenController *zen_controller_new(const char *zendir, const char *profiles_dir)
 	result->set_context = NULL;
 	result->set_active_profile = NULL;
 
-	Py_Initialize();
+	zen_controller_init_python();
 
 	PyRun_SimpleString("import sys");
 	snprintf(zen_path, PATH_MAX + 20 - 1, "sys.path.append('%s')", zendir);

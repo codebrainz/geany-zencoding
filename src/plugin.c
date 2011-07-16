@@ -480,7 +480,6 @@ static gchar *python_version(void)
 
 void plugin_init(GeanyData *data)
 {
-
 	memset(&plugin, 0, sizeof(struct ZenCodingPlugin));
 
 	build_zc_menu(&plugin);
