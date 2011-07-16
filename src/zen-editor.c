@@ -436,8 +436,10 @@ ZenEditor_prompt(ZenEditor *self, PyObject *args)
 		g_free(abbr);
 		Py_RETURN_NONE;
 	}
-	else
-		return PyString_FromString(abbr);
+
+	result = PyString_FromString(abbr);
+	g_free(abbr);
+	return result;
 }
 
 
