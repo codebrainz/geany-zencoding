@@ -462,8 +462,25 @@ static void init_config(struct ZenCodingPlugin *plugin)
 }
 
 
+static gchar *python_version(void)
+{
+	gchar *version;
+	gchar *delim;
+
+	version = g_strdup(Py_GetVersion());
+
+	if ((delim = strchr(version, ' ')) == NULL)
+		return NULL;
+
+	*delim = '\0';
+
+	return version;
+}
+
+
 void plugin_init(GeanyData *data)
 {
+
 	memset(&plugin, 0, sizeof(struct ZenCodingPlugin));
 
 	build_zc_menu(&plugin);
@@ -474,6 +491,9 @@ void plugin_init(GeanyData *data)
 
 	zen_controller_set_active_profile(plugin.zen_controller, "xhtml");
 
+#ifdef DEBUG
+	gchar *pyversion;
+	pyversion = python_version();
 	g_print("Zen Coding Plugin - Version Information\n"
 			"---------------------------------------\n"
 			"  GTK+ Version: %d.%d.%d\n"
@@ -481,7 +501,9 @@ void plugin_init(GeanyData *data)
 			"  Python Version: %s\n",
 			gtk_major_version, gtk_minor_version, gtk_micro_version,
 			glib_major_version, glib_minor_version, glib_micro_version,
-			Py_GetVersion());
+			pyversion);
+	g_free(pyversion);
+#endif
 }
 
 
