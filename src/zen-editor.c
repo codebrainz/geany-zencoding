@@ -519,15 +519,25 @@ ZenEditor_set_context(ZenEditor *self, PyObject *args)
 static PyObject *
 ZenEditor_get_profile_name(ZenEditor *self, PyObject *args)
 {
+	PyObject *result;
+
 	print_called();
-	return PyString_FromString("html");
+
+	if (self->active_profile != NULL && PyString_Check(self->active_profile))
+	{
+		result = PyString_FromString(PyString_AsString(self->active_profile));
+		return result;
+	}
+	else
+		return PyString_FromString("html");
 }
 
 
 static PyObject *
 ZenEditor_set_profile_name(ZenEditor *self, PyObject *args)
 {
-	PyObject *profile = NULL, *tmp;
+	gchar *profile = NULL;
+	PyObject *tmp, *temp_profile = NULL;
 
 	print_called();
 
@@ -535,9 +545,11 @@ ZenEditor_set_profile_name(ZenEditor *self, PyObject *args)
 	{
 		if (profile != NULL)
 		{
+			temp_profile = PyString_FromString(profile);
+
 			tmp = self->active_profile;
-			Py_INCREF(profile);
-			self->active_profile = profile;
+			Py_INCREF(temp_profile);
+			self->active_profile = temp_profile;
 			Py_XDECREF(tmp);
 
 			Py_RETURN_TRUE;
@@ -593,6 +605,7 @@ ZenEditor_init_profiles(ZenEditor *self, PyObject *args)
 		"				else:\n"
 		"					d['self_closing_tag'] = p.getboolean('profile', \n"
 		"												'self_closing_tag')\n"
+		"			d['filters'] = None\n"
 		"			zencoding.utils.setup_profile(name, d)\n";
 
 	print_called();
@@ -676,6 +689,9 @@ ZenEditor_init(ZenEditor *self, PyObject *args, PyObject *kwds)
 	static gchar *kwlist[] = { "profile", "context", NULL };
 
 	print_called();
+
+	self->active_profile = PyString_FromString("xhtml");
+	self->context = NULL;
 
 	if (PyArg_ParseTupleAndKeywords(args, kwds, "|OO", kwlist,
 			&context, &profile))

@@ -282,6 +282,7 @@ static void build_zc_menu(struct ZenCodingPlugin *plugin)
 	gtk_menu_append(GTK_MENU(pmenu), item);
 	g_signal_connect(item, "toggled", G_CALLBACK(on_profile_toggled), "xml");
 
+#if 0
 	dir = g_dir_open(ZEN_PROFILES_PATH, 0, NULL);
 	if (dir != NULL)
 	{
@@ -305,6 +306,7 @@ static void build_zc_menu(struct ZenCodingPlugin *plugin)
 		}
 		g_dir_close(dir);
 	}
+#endif
 
 	item = gtk_image_menu_item_new_with_label(_("Open Zen Coding Settings File"));
 	img = gtk_image_new_from_stock(GTK_STOCK_PREFERENCES, GTK_ICON_SIZE_MENU);
