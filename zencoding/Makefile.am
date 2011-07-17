@@ -1,6 +1,5 @@
 SUBDIRS = actions filters interface parser
 
-
 zencoding_sources			=	__init__.py \
 								html_matcher.py \
 								resources.py \

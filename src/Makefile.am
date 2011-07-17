@@ -1,7 +1,6 @@
 geany_zencoding_defines		=	-DZEN_MODULE_PATH="\"$(libdir)/geany\"" \
 								-DZEN_PROFILES_PATH="\"$(datadir)/geany/zencoding/profiles\"" \
 								-DZEN_ICONS_PATH="\"$(datadir)/geany/zencoding/icons\""
-
 geanyplugin_LTLIBRARIES		=	zencoding.la
 geanyplugindir				=	$(libdir)/geany
 zencoding_la_LDFLAGS		=	 -module -avoid-version -Wl,--export-dynamic

@@ -29,6 +29,7 @@
 #include <Python.h>
 #include <structmember.h>
 #include <stdarg.h>
+#include <regex.h>
 #include <geanyplugin.h>
 #include "zen-editor.h"
 
@@ -275,12 +276,61 @@ ZenEditor_replace_caret_placeholder(const gchar *placeholder,
 }
 
 
+/*
+ * Takes a string containing a range (ie. ${0:1}) and replaces it in the new
+ * string with the range end.  The returned string is a copy and should be
+ * freed when no longer needed.
+ *
+ * Example:
+ *   'some text here ${10:20} and more'
+ * becomes
+ *   'some text here 20 and more'
+ */
+static gchar *
+ZenEditor_replace_range(const gchar *text)
+{
+	gint ret;
+	gchar *start_str, *end_str;
+	gchar *repl;
+	regex_t re;
+	regmatch_t match[3] = {0};
+
+	if (regcomp(&re, "\\$\\{([0-9\\.]+):([0-9\\.\\-]+)\\}", REG_EXTENDED) != 0)
+		return g_strdup(text);
+
+	if (regexec(&re, text, 3, match, 0) == 0)
+	{
+		start_str = g_strndup(text + match[1].rm_so,
+						match[1].rm_eo - match[1].rm_so);
+		end_str = g_strndup(text + match[2].rm_so,
+						match[2].rm_eo - match[2].rm_so);
+
+		repl = g_malloc0(strlen(text) + 1);
+
+		strncpy(repl, text, match[0].rm_so + 1);
+		strncpy(repl + match[0].rm_so, end_str, match[2].rm_eo - match[2].rm_so);
+		strncpy(repl + match[0].rm_so + (match[2].rm_eo - match[2].rm_so),
+			text + match[0].rm_eo,
+			strlen(text) - match[0].rm_eo);
+
+		g_free(start_str);
+		g_free(end_str);
+		regfree(&re);
+
+		return repl;
+	}
+
+	regfree(&re);
+	return g_strdup(text);
+}
+
+
 static PyObject *
 ZenEditor_replace_content(ZenEditor *self, PyObject *args)
 {
 	PyObject *result;
 	gint sel_start = -1, sel_end = -1, ph_pos;
-	gchar *text, *ph, *tmp;
+	gchar *text, *ph, *tmp, *tmp2;
 	ScintillaObject *sci;
 
 	print_called();
@@ -289,32 +339,34 @@ ZenEditor_replace_content(ZenEditor *self, PyObject *args)
 	if (PyArg_ParseTuple(args, "s|ii", &text, &sel_start, &sel_end))
 	{
 		tmp = ZenEditor_replace_caret_placeholder(self->caret_placeholder, text, &ph_pos);
+		tmp2 = ZenEditor_replace_range(tmp);
+		g_free(tmp);
 
 		if (sel_start == -1 && sel_end == -1)
 		{
 			/* replace whole editor content */
-			sci_set_text(sci, tmp);
+			sci_set_text(sci, tmp2);
 		}
 		else if (sel_start != -1 && sel_end == -1)
 		{
 			/* insert text at sel_start */
-			sci_insert_text(sci, sel_start, tmp);
+			sci_insert_text(sci, sel_start, tmp2);
 		}
 		else if (sel_start != -1 && sel_end != -1)
 		{
 			/* replace from sel_start to sel_end */
 			sci_set_selection_start(sci, sel_start);
 			sci_set_selection_end(sci, sel_end);
-			sci_replace_sel(sci, tmp);
+			sci_replace_sel(sci, tmp2);
 		}
 		else
 		{
 			dbgf("Invalid arguments were supplied.");
-			g_free(tmp);
+			g_free(tmp2);
 			Py_RETURN_NONE;
 		}
 
-		g_free(tmp);
+		g_free(tmp2);
 
 		/* Move cursor to first placeholder position, if found */
 		if (ph_pos > -1)
