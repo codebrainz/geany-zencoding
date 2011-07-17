@@ -27,6 +27,9 @@ extern "C" {
 #endif
 
 
+/*#define ZEN_EDITOR_DEBUG 1*/
+
+
 PyObject *zen_editor_module_init(void);
 
 

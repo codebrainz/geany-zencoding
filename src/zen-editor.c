@@ -39,9 +39,6 @@ extern GeanyData		*geany_data;
 extern GeanyFunctions	*geany_functions;
 
 
-/*#define ZEN_EDITOR_DEBUG 1*/
-
-
 #ifdef ZEN_EDITOR_DEBUG
 static void _debug_print(const char *file, int line, const char *function, const char *fmt, ...)
 {

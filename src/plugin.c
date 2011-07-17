@@ -89,7 +89,7 @@ enum
 	ACTION_TOGGLE_COMMENTS,
 	ACTION_SPLIT_JOIN_TAG,
 	ACTION_REMOVE_TAG,
-	ACTION_ENCODE_DECODE_BASE64,
+	/*ACTION_ENCODE_DECODE_BASE64,*/
 	ACTION_INCREMENT_NUMBER_BY_1,
 	ACTION_INCREMENT_NUMBER_BY_10,
 	ACTION_INCREMENT_NUMBER_BY_01,
@@ -126,7 +126,7 @@ actions[ACTION_LAST] = {
 	{ "toggle_comment", _("Toggle Comment"), GDK_c, GDK_SHIFT_MASK | GDK_CONTROL_MASK },
 	{ "split_join_tag", _("Split or Join Tag"), GDK_j, GDK_SHIFT_MASK | GDK_CONTROL_MASK },
 	{ "remove_tag", _("Remove Tag"), GDK_r, GDK_SHIFT_MASK | GDK_CONTROL_MASK },
-	{ "encode_decode_base64", _("Encode/Decode to/from Base64"), GDK_6, GDK_SHIFT_MASK | GDK_CONTROL_MASK },
+	/*{ "encode_decode_base64", _("Encode/Decode to/from Base64"), GDK_6, GDK_SHIFT_MASK | GDK_CONTROL_MASK },*/
 	{ "increment_number_by_1", _("Increment Number by 1"), 0, 0 },
 	{ "increment_number_by_10", _("Increment Number by 10"), 0, 0 },
 	{ "increment_number_by_01", _("Increment Number by 0.1"), 0, 0 },
@@ -225,7 +225,7 @@ static void build_zc_menu(struct ZenCodingPlugin *plugin)
 
 	menu = gtk_menu_new();
 
-	plugin->main_menu_item = gtk_image_menu_item_new_with_label(_("Zen Coding"));
+	plugin->main_menu_item = gtk_image_menu_item_new_with_mnemonic(_("_Zen Coding"));
 	img = gtk_image_new_from_file(ZENCODING_ICON);
 	gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(plugin->main_menu_item), img);
 	ui_add_document_sensitive(plugin->main_menu_item);
@@ -318,26 +318,48 @@ static void build_zc_menu(struct ZenCodingPlugin *plugin)
 }
 
 
+static void reload_zen_coding_notice(const gchar *msg)
+{
+	GtkWidget *dialog;
+	static gboolean is_showing = FALSE;
+
+	g_return_if_fail(msg != NULL);
+
+	if (!is_showing) /* prevent showing multiple times */
+	{
+		is_showing = TRUE;
+		dialog = gtk_message_dialog_new(
+					GTK_WINDOW(geany->main_widgets->window),
+					GTK_DIALOG_DESTROY_WITH_PARENT,
+					GTK_MESSAGE_INFO,
+					GTK_BUTTONS_OK,
+					msg, NULL);
+
+		gtk_dialog_run(GTK_DIALOG(dialog));
+		gtk_widget_destroy(dialog);
+		is_showing = FALSE;
+	}
+}
+
+
 static void on_monitor_changed(GFileMonitor *monitor, GFile *file,
 	GFile *other_file, GFileMonitorEvent event_type, struct ZenCodingPlugin *plugin)
 {
 	if (event_type == G_FILE_MONITOR_EVENT_CHANGED ||
 		event_type == G_FILE_MONITOR_EVENT_CREATED)
 	{
-		if (plugin->zen_controller != NULL)
-			zen_controller_free(plugin->zen_controller);
-
-		plugin->zen_controller = zen_controller_new(plugin->config_dir, ZEN_PROFILES_PATH);
-
-		if (plugin->zen_controller == NULL)
-			g_warning(_("Failed re-initializing Zen Coding after settings change detected"));
-		else
-			ui_set_statusbar(TRUE, _("Zen Coding: Re-initialized after settings change detected"));
+		reload_zen_coding_notice(
+				"The Zen Coding settings file has changed, you need to "
+				"reload the Zen Coding plugin or restart Geany for the "
+				"settings to take effect.");
 	}
 	else if (event_type == G_FILE_MONITOR_EVENT_DELETED ||
 		event_type == G_FILE_MONITOR_EVENT_MOVED)
 	{
-		init_config(plugin);
+		reload_zen_coding_notice(
+			"The Zen Coding settings file has been deleted.  It will be "
+			"recreated when you reload the Zen Coding plugin or restart "
+			"Geany.");
 	}
 }
 
@@ -407,7 +429,7 @@ static void recursively_copy(const char *src, const char *dst)
 			recursively_copy(src_fn, dst_fn);
 		}
 		else if (g_file_test(src_fn, G_FILE_TEST_IS_REGULAR) &&
-			(g_str_has_suffix(src_fn, ".py") || g_str_has_suffix(src_fn, ".so")))
+					g_str_has_suffix(src_fn, ".py"))
 		{
 			if (!copy_file(src_fn, dst_fn))
 				g_warning("An error occurred copy file '%s' to '%s'.", src_fn, dst_fn);
@@ -454,14 +476,19 @@ static void init_config(struct ZenCodingPlugin *plugin)
 
 	plugin->monitor = g_file_monitor_file(plugin->settings_file,
 						G_FILE_MONITOR_NONE, NULL, NULL);
+
 	if (plugin->monitor != NULL)
-		g_signal_connect(plugin->monitor, "changed", G_CALLBACK(on_monitor_changed), plugin);
+	{
+		g_signal_connect(plugin->monitor, "changed",
+			G_CALLBACK(on_monitor_changed), plugin);
+	}
 
 	g_free(tmp);
 	g_free(sys_path);
 }
 
 
+#ifdef ZEN_EDITOR_DEBUG
 static gchar *python_version(void)
 {
 	gchar *version;
@@ -476,6 +503,7 @@ static gchar *python_version(void)
 
 	return version;
 }
+#endif
 
 
 void plugin_init(GeanyData *data)
@@ -490,7 +518,7 @@ void plugin_init(GeanyData *data)
 
 	zen_controller_set_active_profile(plugin.zen_controller, "xhtml");
 
-#ifdef DEBUG
+#ifdef ZEN_EDITOR_DEBUG
 	gchar *pyversion;
 	pyversion = python_version();
 	g_print("Zen Coding Plugin - Version Information\n"
