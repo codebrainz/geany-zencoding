@@ -347,8 +347,7 @@ static void reload_zen_coding_notice(const gchar *msg)
 static void on_monitor_changed(GFileMonitor *monitor, GFile *file,
 	GFile *other_file, GFileMonitorEvent event_type, struct ZenCodingPlugin *plugin)
 {
-	if (event_type == G_FILE_MONITOR_EVENT_CHANGED ||
-		event_type == G_FILE_MONITOR_EVENT_CREATED)
+	if (event_type == G_FILE_MONITOR_EVENT_CHANGES_DONE_HINT)
 	{
 		reload_zen_coding_notice(
 				"The Zen Coding settings file has changed, you need to "
