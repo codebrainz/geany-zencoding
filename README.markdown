@@ -28,6 +28,20 @@ For example:
 
 [Read more about current Zen Coding syntax](https://code.google.com/p/zen-coding/wiki/ZenHTMLSelectorsEn)
 
+Dependencies
+------------
+
+* Geany plugin development packages (including GTK+/GLib)
+* Python 2.6+ development package
+
+For example in Debian (and Ubuntu, Mint, etc.), the following command
+should install the required packages:
+
+    # apt-get install geany-plugins libgtk-2.0-dev python-dev
+
+There should be packages for most popular distros that serve the same
+purpose as these one do.
+
 Installation
 ------------
 
@@ -45,7 +59,7 @@ build system files:
 
 Now configure, compile and install the build system:
 
-	$ ./configure --prefix=$(dirname $(dirname $(which geany))) # this is Geany's prefix
+	$ ./configure --prefix=`pkg-config --variable=prefix geany`
 	$ make
 	$ make install # maybe as root depending on prefix
 
@@ -116,12 +130,6 @@ will detect when this file has been updated and it will reload itself.
 You can reset the settings file by just deleting it from your home directory,
 typically `~/.config/geany/plugins/zencoding/zencoding/zen_settings.py`.
 
-Dependencies
-------------
-
-* Geany plugin development package (including GTK+/GLib)
-* Python 2.6+ development package
-
 Bugs
 ----
 
@@ -129,3 +137,4 @@ Bugs
 * Only system-wide profiles currently loaded.
 * Need better icons.
 * Lots of other stuff not implemented, or otherwise.
+* Needs distro packaging
