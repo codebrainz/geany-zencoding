@@ -335,7 +335,7 @@ static void reload_zen_coding_notice(const gchar *msg)
 					GTK_DIALOG_DESTROY_WITH_PARENT,
 					GTK_MESSAGE_INFO,
 					GTK_BUTTONS_OK,
-					msg, NULL);
+					"%s", msg);
 
 		gtk_dialog_run(GTK_DIALOG(dialog));
 		gtk_widget_destroy(dialog);

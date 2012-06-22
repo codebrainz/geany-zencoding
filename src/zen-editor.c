@@ -571,42 +571,42 @@ ZenEditor_init_profiles(ZenEditor *self, PyObject *args)
 	gint result = -1;
 	gchar *profiles_dir = NULL, *runcode = NULL;
 	static gboolean has_run = 0;
-	static const gchar *runfmt =
-		"import os\n"
-		"from ConfigParser import SafeConfigParser\n"
-		"import zencoding.utils\n"
-		"for cfg_file in os.listdir('%s'):\n"
-		"	if cfg_file.endswith('.conf'):\n"
-		"		cfg_file = os.path.join('%s', cfg_file)\n"
-		"		p = SafeConfigParser()\n"
-		"		p.read(cfg_file)\n"
-		"		if p.has_section('profile') and p.has_option('profile', 'name'):\n"
-		"			d = {}\n"
-		"			name = p.get('profile', 'name')\n"
-		"			if not name: continue\n"
-		"			if p.has_option('profile', 'tag_case'):\n"
-		"				d['case'] = p.get('profile', 'tag_case').lower()\n"
-		"			if p.has_option('profile', 'attr_case'):\n"
-		"				d['attr_case'] = p.get('profile', 'attr_case').lower()\n"
-		"			if p.has_option('profile', 'attr_quotes'):\n"
-		"				d['attr_quotes'] = p.get('profile', 'attr_quotes').lower()\n"
-		"			if p.has_option('profile', 'tag_nl'):\n"
-		"				if p.get('profile', 'tag_nl').lower() == 'decide':\n"
-		"					d['tag_nl'] = 'decide'\n"
-		"				else:\n"
-		"					d['tag_nl'] = p.getboolean('profile', 'tag_nl')\n"
-		"			if p.has_option('profile', 'place_cursor'):\n"
-		"				d['place_cursor'] = p.getboolean('profile', 'place_cursor')\n"
-		"			if p.has_option('profile', 'indent'):\n"
-		"				d['indent'] = p.getboolean('profile', 'indent')\n"
-		"			if p.has_option('profile', 'self_closing_tag'):\n"
-		"				if p.get('profile', 'self_closing_tag').lower() == 'xhtml':\n"
-		"					d['self_closing_tag'] = 'xhtml'\n"
-		"				else:\n"
-		"					d['self_closing_tag'] = p.getboolean('profile', \n"
-		"												'self_closing_tag')\n"
-		"			d['filters'] = None\n"
-		"			zencoding.utils.setup_profile(name, d)\n";
+#define RUNFMT																		\
+	"import os\n"																	\
+	"from ConfigParser import SafeConfigParser\n"									\
+	"import zencoding.utils\n"														\
+	"for cfg_file in os.listdir('%s'):\n"											\
+	"	if cfg_file.endswith('.conf'):\n"											\
+	"		cfg_file = os.path.join('%s', cfg_file)\n"								\
+	"		p = SafeConfigParser()\n"												\
+	"		p.read(cfg_file)\n"														\
+	"		if p.has_section('profile') and p.has_option('profile', 'name'):\n"		\
+	"			d = {}\n"															\
+	"			name = p.get('profile', 'name')\n"									\
+	"			if not name: continue\n"											\
+	"			if p.has_option('profile', 'tag_case'):\n"							\
+	"				d['case'] = p.get('profile', 'tag_case').lower()\n"				\
+	"			if p.has_option('profile', 'attr_case'):\n"							\
+	"				d['attr_case'] = p.get('profile', 'attr_case').lower()\n"		\
+	"			if p.has_option('profile', 'attr_quotes'):\n"						\
+	"				d['attr_quotes'] = p.get('profile', 'attr_quotes').lower()\n"	\
+	"			if p.has_option('profile', 'tag_nl'):\n"							\
+	"				if p.get('profile', 'tag_nl').lower() == 'decide':\n"			\
+	"					d['tag_nl'] = 'decide'\n"									\
+	"				else:\n"														\
+	"					d['tag_nl'] = p.getboolean('profile', 'tag_nl')\n"			\
+	"			if p.has_option('profile', 'place_cursor'):\n"						\
+	"				d['place_cursor'] = p.getboolean('profile', 'place_cursor')\n"	\
+	"			if p.has_option('profile', 'indent'):\n"							\
+	"				d['indent'] = p.getboolean('profile', 'indent')\n"				\
+	"			if p.has_option('profile', 'self_closing_tag'):\n"					\
+	"				if p.get('profile', 'self_closing_tag').lower() == 'xhtml':\n"	\
+	"					d['self_closing_tag'] = 'xhtml'\n"							\
+	"				else:\n"														\
+	"					d['self_closing_tag'] = p.getboolean('profile', \n"			\
+	"												'self_closing_tag')\n"			\
+	"			d['filters'] = None\n"												\
+	"			zencoding.utils.setup_profile(name, d)\n"
 
 	print_called();
 
@@ -617,7 +617,7 @@ ZenEditor_init_profiles(ZenEditor *self, PyObject *args)
 	{
 		py_return_none_if_null(profiles_dir);
 
-		runcode = g_strdup_printf(runfmt, profiles_dir, profiles_dir);
+		runcode = g_strdup_printf(RUNFMT, profiles_dir, profiles_dir);
 		result = PyRun_SimpleString(runcode);
 		g_free(runcode);
 	}
@@ -629,6 +629,8 @@ ZenEditor_init_profiles(ZenEditor *self, PyObject *args)
 	}
 
 	Py_RETURN_FALSE;
+
+#undef RUNFMT
 }
 
 
