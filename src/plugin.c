@@ -58,7 +58,7 @@ PLUGIN_VERSION_CHECK(200)
 PLUGIN_SET_INFO(_("Zen Coding"),
 				_("Zen Coding plugin for Geany"),
 				"1.0",
-				"Matthew Brush <mbrush@codebrainz.ca>");
+				"Matthew Brush <mbrush@codebrainz.ca>")
 
 
 static struct ZenCodingPlugin

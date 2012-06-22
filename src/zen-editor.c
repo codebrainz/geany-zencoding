@@ -56,12 +56,12 @@ static void _debug_print(const char *file, int line, const char *function, const
 
 	g_free(format);
 }
-#define dbg(fmt, ...) _debug_print(__FILE__, __LINE__, NULL, fmt, ##__VA_ARGS__)
-#define dbgf(fmt, ...) _debug_print(__FILE__, __LINE__, __FUNCTION__, fmt, ##__VA_ARGS__)
+#define dbg(...) _debug_print(__FILE__, __LINE__, NULL, __VA_ARGS__)
+#define dbgf(...) _debug_print(__FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
 #define print_called() _debug_print(__FILE__, __LINE__, __FUNCTION__, "%s", "called")
 #else
-#define dbg(fmt, ...)
-#define dbgf(fmt, ...)
+#define dbg(...)
+#define dbgf(...)
 #define print_called()
 #endif
 
