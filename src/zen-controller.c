@@ -69,7 +69,7 @@ ZenController *zen_controller_new(const char *zendir, const char *profiles_dir)
 {
 	ZenController *result;
 	char zen_path[PATH_MAX + 20] = { 0 };
-	PyObject *module, *cls;
+	PyObject *module, *cls, *res;
 
 	result = malloc(sizeof(ZenController));
 	result->editor = NULL;
@@ -201,7 +201,6 @@ ZenController *zen_controller_new(const char *zendir, const char *profiles_dir)
 	}
 
 	/* Initialize/setup profiles */
-	PyObject *res;
 	res = PyObject_CallMethod(result->editor, "init_profiles", "(s)", profiles_dir);
 	if (res == NULL)
 	{

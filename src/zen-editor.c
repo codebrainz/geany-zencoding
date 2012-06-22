@@ -286,7 +286,6 @@ ZenEditor_replace_caret_placeholder(const gchar *placeholder,
 static gchar *
 ZenEditor_replace_range(const gchar *text)
 {
-	gint ret;
 	gchar *start_str, *end_str;
 	gchar *repl;
 	regex_t re;
@@ -325,9 +324,8 @@ ZenEditor_replace_range(const gchar *text)
 static PyObject *
 ZenEditor_replace_content(ZenEditor *self, PyObject *args)
 {
-	PyObject *result;
 	gint sel_start = -1, sel_end = -1, ph_pos;
-	gchar *text, *ph, *tmp, *tmp2;
+	gchar *text, *tmp, *tmp2;
 	ScintillaObject *sci;
 
 	print_called();
@@ -442,7 +440,8 @@ ZenEditor_prompt(ZenEditor *self, PyObject *args)
 {
 	PyObject *result;
 	GtkWidget *dialog, *input, *content_area, *vbox;
-	gchar *abbr = NULL, *title = NULL;
+	gchar *abbr = NULL;
+	const gchar *title = NULL;
 
 	print_called();
 

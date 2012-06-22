@@ -444,8 +444,7 @@ static void recursively_copy(const char *src, const char *dst)
 
 static void init_config(struct ZenCodingPlugin *plugin)
 {
-	gint i;
-	gchar *tmp, *settings, *sys_path, *user_path, *code = NULL;
+	gchar *tmp, *settings, *sys_path;
 
 	g_free(plugin->config_dir);
 	plugin->config_dir = g_build_filename(geany->app->configdir, "plugins", "zencoding", NULL);
