@@ -832,7 +832,7 @@ PyObject *zen_editor_module_init(void)
 
 	ZenEditorType.tp_new = PyType_GenericNew;
 	if (PyType_Ready(&ZenEditorType) < 0)
-		return;
+		return NULL;
 
 	m = Py_InitModule3("geany", Module_methods, "Geany Zen Coding module");
 

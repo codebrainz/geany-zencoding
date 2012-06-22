@@ -150,7 +150,7 @@ static void action_activate(guint key_id)
 }
 
 
-static guint on_action_item_activate(GObject *object, gpointer id_ptr)
+static void on_action_item_activate(GObject *object, gpointer id_ptr)
 {
 	gint id = GPOINTER_TO_INT(id_ptr);
 	ZenCodingAction action;
