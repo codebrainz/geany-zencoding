@@ -31,13 +31,15 @@ For example:
 Dependencies
 ------------
 
+* Compiler and related utilities
 * Geany plugin development packages (including GTK+/GLib)
 * Python 2.6+ development package
 
 For example in Debian (and Ubuntu, Mint, etc.), the following command
 should install the required packages:
 
-    # apt-get install geany-plugins libgtk-2.0-dev python-dev
+    # apt-get install \
+        build-essential autoconf libtool geany-plugins libgtk2.0-dev python-dev
 
 There should be packages for most popular distros that serve the same
 purpose as these one do.
